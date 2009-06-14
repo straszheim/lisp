@@ -53,15 +53,9 @@ namespace lisp
     }
   };
 
-  struct cons {
-
+  struct cons 
+  {
     unsigned count;
-
-    static bool nil(const variant& v)
-    {
-      const cons_ptr* p = boost::get<cons_ptr>(&v);
-      return p && !*p;
-    }
 
     variant car, cdr;
     
@@ -97,73 +91,82 @@ namespace lisp
       delete c;
   }
   
+  bool is_nil(const variant& v)
+  {
+    const cons_ptr p = boost::get<cons_ptr>(v);
+    return !p;
+  }
+
+  bool is_ptr(const variant& v)
+  {
+    return boost::get<cons_ptr>(&v);
+  }
+
   struct process
   {
     template <typename T>
     struct result
     {
-      typedef cons_ptr type;
+      typedef variant type;
     };
 
-    cons_ptr operator()(double d) const
+    variant operator()(double d) const
     {
-      cons_ptr c = new cons;
-      c->car = d;
-      return c;
+      return d;
     }
     
-    cons_ptr operator()(int i) const
+    variant operator()(boost::iterator_range<std::string::const_iterator> r) const
     {
-      cons_ptr c = new cons;
-      c->car = i;
-      return c;
+      return symbol(std::string(r.begin(), r.end()));
     }
 
-    cons_ptr operator()(boost::iterator_range<std::string::const_iterator> r) const
+    variant operator()(const std::vector<variant>& v) const
     {
-      symbol id(std::string(r.begin(), r.end()));
-      cons_ptr c = new cons;
-      c->car = id;
-      return c;
-    }
-
-    cons_ptr operator()(const std::vector<cons_ptr>& v) const
-    {
-      cons_ptr c = new cons;
+      std::cout << "**** BING " << v.size() << "\n";
+      cons_ptr head = new cons;
+      cons_ptr tmp = head;
       // chain them together
-      for (int i=0; i<v.size()-1; i++)
-	v[i]->cdr = v[i+1];
-      // point our cons at it
-      c->car = v[0];
-      return c;
+      if (v.size() == 0)
+	return head;
+
+      tmp->car = v[0];
+      for (unsigned i=1; i<v.size(); i++)
+	{
+	  cons_ptr tail = new cons;
+	  tmp->cdr = tail;
+	  tmp = tail;
+	  tmp->car = v[i];
+	}
+      return head;
     }
 
   };
 
-  struct cons_print
+  struct parens
+  {
+    std::ostream& os;
+    parens(std::ostream& _os) : os(_os) { os << "("; }
+    ~parens() { os << ")"; }
+  };
+
+  struct cons_debug
   {
     typedef void result_type;
-    bool start;
     
     std::ostream& os;
 
-    cons_print(std::ostream& _os) 
-      : start(false), os(_os) 
+    cons_debug(std::ostream& _os) 
+      : os(_os) 
     { }
 
     void operator()(double d)
     {
-      os << d;
-    }
-    
-    void operator()(int i)
-    {
-      os << i;
+      os << "(double:" << d << ")";
     }
     
     void operator()(const std::string& s)
     {
-      os << s;
+      os << "\"" << s << "\"";
     }
     
     void operator()(const symbol& s)
@@ -173,37 +176,107 @@ namespace lisp
     
     void operator()(const cons_ptr p)
     {
-      if (!p) 
-	return;
-      if (boost::get<cons_ptr>(&p->car))
+      if (!p)
 	{
-	  os << "(";
+	  os << "NIL";
+	  return;
 	}
+      os << "(cons @" << p.get() << " car:";
       boost::apply_visitor(*this, p->car);
-      if (boost::get<cons_ptr>(&p->car))
-	os << ")";
-      if (!cons::nil(p->cdr))
-	os << " ";
+
+      os << " cdr:";
       boost::apply_visitor(*this, p->cdr);
+
+      os << ")";
     }
 
     void operator()(const function f)
     {
       os << "function@" << &f << "\n";
     }
+
+    void operator()(const variant v)
+    {
+      boost::apply_visitor(*this, v);
+    }
   };
   
   std::ostream& operator<<(std::ostream& os,
 			   cons_ptr cp)
   {
-    cons_print printer(os);
+    cons_debug printer(os);
     printer(cp);
     return os;
   }
 
+  std::ostream& operator<<(std::ostream& os,
+			   variant v)
+  {
+    cons_debug printer(os);
+    printer(v);
+    return os;
+  }
+
+  struct cons_print
+  {
+    typedef void result_type;
+    
+    std::ostream& os;
+
+    cons_print(std::ostream& _os) 
+      : os(_os) 
+    { }
+
+    void operator()(double d)
+    {
+      os << d;
+    }
+    
+    void operator()(const std::string& s)
+    {
+      os << "\"" << s << "\"";
+    }
+    
+    void operator()(const symbol& s)
+    {
+      os << s;
+    }
+    
+    void operator()(const cons_ptr p)
+    {
+      if (!p) return;
+
+      bool branch = is_ptr(p->car) && is_ptr(p->cdr);
+      if (branch)
+	os << "(";
+      boost::apply_visitor(*this, p->car);
+      if (branch)
+	os << ")";
+      if (is_ptr(p->cdr) && !is_nil(p->cdr))
+	os << " ";
+      boost::apply_visitor(*this, p->cdr);
+
+    }
+
+    void operator()(const function f)
+    {
+      os << "function@" << &f << "\n";
+    }
+
+    void operator()(const variant v)
+    {
+      bool branch = is_ptr(v);
+      if (branch)
+	os << "(";
+      boost::apply_visitor(*this, v);
+      if (branch)
+	os << ")";
+    }
+  };
+  
   template <typename Iterator>
   struct interpreter 
-    : qi::grammar<Iterator, cons_ptr(), ascii::space_type>
+    : qi::grammar<Iterator, variant(), ascii::space_type>
   {
     boost::phoenix::function<lisp::process> p;
 
@@ -231,10 +304,10 @@ namespace lisp
       //;
 
       atom = 
-	/*(int_ >> !char_('.'))[_val = p(_1)]
-	  |*/ double_[_val = p(_1)]
+	//(int_ >> !char_('.'))[_val = p(_1)]
+	double_[_val = p(_1)]
 	| raw[lexeme[alpha >> *alnum >> !alnum]][_val = p(_1)]
-	;
+      	;
       
       sexpr = // reserved[_val = _1] | 
 	atom[_val = _1] 
@@ -261,7 +334,7 @@ namespace lisp
       debug(sexpr);
     }
     
-    qi::rule<Iterator, cons_ptr(), ascii::space_type> 
+    qi::rule<Iterator, variant(), ascii::space_type> 
     atom, sexpr; //, reserved;
   };
 
@@ -277,6 +350,12 @@ namespace lisp
     variant operator()(double d)
     {
       return d;
+    }
+    
+    variant operator()(variant v)
+    {
+      eval eprime(ctx);
+      boost::apply_visitor(eprime, v);
     }
     
     variant operator()(const std::string& s)
@@ -382,21 +461,27 @@ main()
     {
       std::string::const_iterator iter = str.begin();
       std::string::const_iterator end = str.end();
-      lisp::cons_ptr result;
+      lisp::variant result;
       bool r = phrase_parse(iter, end, lispi, space, result);
 
       if (r && iter == end)
         {
 	  std::cout << "-------------------------\n";
 	  std::cout << "Parsing succeeded: ";
-	  lisp::cons_print printer(std::cout);
-	  try {
-	    eval e(global);
-	    variant out = e(result);
-	    //	    printer(out);
-	  } catch (const std::exception& e) {
-	    std::cout << "*** - EVAL exception caught: " << e.what() << "\n";
-	  }
+	  cons_ptr c = new cons(result);
+
+	  lisp::cons_debug printer(std::cout);
+	  printer(result);
+	  std::cout << "\n" << str << "\n";
+	  lisp::cons_print pretty(std::cout);
+	  pretty(result);
+	  //	  try {
+	  //	    eval e(global);
+	  //	    variant out = e(result);
+	  //	    printer(out);
+	  //	  } catch (const std::exception& e) {
+	  //	    std::cout << "*** - EVAL exception caught: " << e.what() << "\n";
+	  //	  }
 	  std::cout << "\n-------------------------\n";
         }
       else
