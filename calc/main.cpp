@@ -1,22 +1,9 @@
-/*=============================================================================
-  Copyright (c) 2001-2009 Joel de Guzman
-
-  Distributed under the Boost Software License, Version 1.0. (See accompanying
-  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-  =============================================================================*/
-///////////////////////////////////////////////////////////////////////////////
-//
-//  Same as cal4, but with debugging enabled.
-//
-//  [ JDG June 29, 2002 ]   spirit1
-//  [ JDG March 5, 2007 ]   spirit2
-//
-///////////////////////////////////////////////////////////////////////////////
-
+#include <boost/intrusive_ptr.hpp>
 #include <boost/config/warning_disable.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
+#include <boost/spirit/include/phoenix1_functions.hpp>
 
 #include <iostream>
 #include <string>
@@ -27,78 +14,147 @@ namespace client
   namespace phoenix = boost::phoenix;
   namespace ascii = boost::spirit::ascii;
 
-  namespace ast
+  struct nil {};
+
+  struct cons;
+
+  typedef boost::intrusive_ptr<cons> cons_ptr;
+
+  struct cons
   {
-    struct nil {};
+    unsigned count;
 
-    struct lisp_ast;
+    typedef boost::variant<
+      std::string,
+      int,
+      double,
+      cons_ptr
+      >
+    type;
 
-    struct lisp_ast
+    type car, cdr;
+    
+    cons() : count(0),
+	     car(cons_ptr(0)),
+	     cdr(cons_ptr(0))
+    { 
+      std::cout << "  Creating cons @ " << this << "\n";
+    }
+
+    ~cons()
     {
-      typedef std::pair<boost::shared_ptr<lisp_ast>, 
-			boost::shared_ptr<lisp_ast> > 
-      cons_t;
+      std::cout << "destroying cons @ " << this << "\n";
+    }
+    
+  };
 
-      typedef boost::variant<
-	std::string,
-	int,
-	double,
-	boost::recursive_wrapper<cons_t>
-	>
-      type;
-
-      type expr;
-
-      friend std::ostream& operator<<(std::ostream& os, const lisp_ast& ast)
-      {
-	return os << "ast";
-      }
-
-      lisp_ast& operator=(double d)
-      {
-	std::cout << __PRETTY_FUNCTION__ << "\n";
-	expr = d;
-	return *this;
-      }
-
-      lisp_ast& operator=(int i)
-      {
-	std::cout << __PRETTY_FUNCTION__ << "\n";
-	expr = i;
-	return *this;
-      }
-
-      template <typename T>
-      lisp_ast& operator=(T const& t)
-      {
-	std::cout << __PRETTY_FUNCTION__ << "\n";
-	expr = std::string(t.begin(), t.end());
-	return *this;
-      }
-
-      lisp_ast& operator=(const std::vector<lisp_ast>& v)
-      {
-	std::cout << __PRETTY_FUNCTION__ << "\n";
-	
-	cons_t cons;
-	for (std::vector<lisp_ast>::const_iterator iter = v.begin();
-	     iter != v.end();
-	     iter++)
-	  {
-
-	  }
-
-	return *this;
-      }
-
-    };
+  void intrusive_ptr_add_ref(cons* c)
+  {
+    std::cout << "inc cons @ " << c << "\n";
+    c->count++;
   }
+  
+  void intrusive_ptr_release(cons* c)
+  {
+    std::cout << "dec cons @ " << c << "\n";
+    c->count--;
+    if (c->count == 0)
+      delete c;
+  }
+  
+  struct process
+  {
+    template <typename T>
+    struct result
+    {
+      typedef cons_ptr type;
+    };
+
+    cons_ptr operator()(double d) const
+    {
+      cons_ptr c = new cons;
+      c->car = d;
+      return c;
+    }
+    
+    cons_ptr operator()(int i) const
+    {
+      cons_ptr c = new cons;
+      c->car = i;
+      return c;
+    }
+
+    cons_ptr operator()(boost::iterator_range<std::string::const_iterator> r) const
+    {
+      std::string s(r.begin(), r.end());
+      cons_ptr c = new cons;
+      c->car = s;
+      std::cout << "returning cons @ " << c.get() << "\n";
+      return c;
+    }
+
+    cons_ptr operator()(const std::vector<cons_ptr>& v) const
+    {
+      cons_ptr c = new cons;
+      // chain them together
+      for (int i=0; i<v.size()-1; i++)
+	v[i]->cdr = v[i+1];
+      // point our cons at it
+      c->car = v[0];
+      return c;
+    }
+
+  };
+
+  struct cons_print
+  {
+    typedef void result_type;
+    
+    std::ostream& os;
+
+    cons_print(std::ostream& _os) : os(_os) { }
+
+    void operator()(double d)
+    {
+      os << d << " ";
+    }
+    
+    void operator()(int i)
+    {
+      os << i << " ";
+    }
+    
+    void operator()(const std::string& s)
+    {
+      os << "'" << s << "' ";
+    }
+    
+    void operator()(const cons_ptr p)
+    {
+      os << "ptr:" << p.get() << "\n";
+      if (!p) return;
+      boost::apply_visitor(*this, p->car);
+      boost::apply_visitor(*this, p->cdr);
+    }
+  };
+  
+  std::ostream& operator<<(std::ostream& os,
+			   cons_ptr cp)
+  {
+    cons_print printer(os);
+    printer(cp);
+    return os;
+  }
+
+  
   ///////////////////////////////////////////////////////////////////////////////
   //  Our calculator grammar
   ///////////////////////////////////////////////////////////////////////////////
   template <typename Iterator>
-  struct calculator : qi::grammar<Iterator, ast::lisp_ast(), ascii::space_type>
+  struct calculator : qi::grammar<Iterator, cons_ptr(), ascii::space_type>
   {
+    boost::phoenix::function<client::process> p;
+
     calculator() : calculator::base_type(sexpr)
     {
       using namespace qi::labels;
@@ -113,51 +169,27 @@ namespace client
       using qi::debug;
       using boost::spirit::lexeme;
       using boost::spirit::raw;
-
+      
       using phoenix::construct;
       using phoenix::val;
+      
 
-      atom = raw[lexeme[alpha >> *alnum >> !alnum]][_val = _1]
-	| double_[_val = _1]
-	| int_[_val = _1]
+      atom = 
+	(int_ >> !char_('.'))[_val = p(_1)]
+	| double_[_val = p(_1)]
+	| raw[lexeme[alpha >> *alnum >> !alnum]][_val = p(_1)]
 	;
-
-      sexpr = atom 
-	| (char_("(") >> (*sexpr)[_val = _1] >> char_(")"))
+      
+      sexpr = atom[_val = _1] 
+	| (char_("(") >> (*sexpr)[_val = p(_1)] >> char_(")"))
 	;
-
-      /*
-      expression =
-	term                            [_val = _1]
-	>> *(   ('+' > term             [_val += _1])
-		|   ('-' > term             [_val -= _1])
-		) 
-	| atom
-	;
-
-      term =
-	factor                          [_val = _1]
-	>> *(   ('*' > factor           [_val *= _1])
-		|   ('/' > factor           [_val /= _1])
-		)
-	;
-
-      factor =
-	uint_                           [_val = _1]
-	|   '(' > expression            [_val = _1] > ')'
-	|   ('-' > factor               [_val = -_1])
-	|   ('+' > factor               [_val = _1])
-	;
-      */
-      expression.name("expression");
-      term.name("term");
-      factor.name("factor");
+      
       atom.name("atom");
       sexpr.name("sexpr");
-
+      
       on_error<fail>
 	(
-	 expression
+	 sexpr
 	 , std::cout
 	 << val("Error! Expecting ")
 	 << _4                               // what failed?
@@ -166,16 +198,15 @@ namespace client
 	 << val("\"")
 	 << std::endl
 	 );
-
-      //      debug(expression);
-      //      debug(term);
-      //      debug(factor);
+      
       debug(atom);
       debug(sexpr);
     }
-
-    qi::rule<Iterator, ast::lisp_ast(), ascii::space_type> expression, term, factor, atom,
-	    sexpr;
+    
+    qi::rule<Iterator, 
+	     cons_ptr(), 
+	     ascii::space_type> 
+    atom, sexpr;
   };
 }
 
@@ -189,29 +220,39 @@ main()
   std::cout << "Expression parser...\n\n";
   std::cout << "/////////////////////////////////////////////////////////\n\n";
   std::cout << "Type an expression...or [q or Q] to quit\n\n";
-
+  
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;
   typedef client::calculator<iterator_type> calculator;
-
+  
   calculator calc; // Our grammar
-
+  
   std::string str;
-  client::ast::lisp_ast result;
+  
+  client::cons_ptr a, b;
+  a = new client::cons; b = new client::cons;
+  a->cdr = b;
+  a->car = 3.14159;
+  b->cdr = std::string("SCHWING");
+  client::cons_print printer(std::cout);
+  printer(a);
+  std::cout << "----------------------------\n";
+
   while (std::getline(std::cin, str))
     {
       if (str.empty() || str[0] == 'q' || str[0] == 'Q')
 	break;
-
+      
       std::string::const_iterator iter = str.begin();
       std::string::const_iterator end = str.end();
-      bool r = phrase_parse(iter, end, calc, space, result);
-
+      bool r = phrase_parse(iter, end, calc, space);
+      
       if (r && iter == end)
         {
 	  std::cout << "-------------------------\n";
 	  std::cout << "Parsing succeeded\n";
-	  //	  std::cout << "result = " << result << std::endl;
+	  client::cons_print printer(std::cout);
+	  //r	  printer(bang);
 	  std::cout << "-------------------------\n";
         }
       else
@@ -221,7 +262,7 @@ main()
 	  std::cout << "-------------------------\n";
         }
     }
-
+  
   std::cout << "Bye... :-) \n\n";
   return 0;
 }
