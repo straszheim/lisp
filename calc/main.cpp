@@ -8,7 +8,7 @@
 #include <iostream>
 #include <string>
 
-namespace client
+namespace lisp
 {
   namespace qi = boost::spirit::qi;
   namespace phoenix = boost::phoenix;
@@ -32,31 +32,37 @@ namespace client
       >
     type;
 
+    static bool nil(const type& v)
+    {
+      const cons_ptr* p = boost::get<cons_ptr>(&v);
+      return p && !*p;
+    }
+
     type car, cdr;
     
     cons() : count(0),
 	     car(cons_ptr(0)),
 	     cdr(cons_ptr(0))
     { 
-      std::cout << "  Creating cons @ " << this << "\n";
+      //      std::cout << "  Creating cons @ " << this << "\n";
     }
 
     ~cons()
     {
-      std::cout << "destroying cons @ " << this << "\n";
+      //      std::cout << "destroying cons @ " << this << "\n";
     }
     
   };
 
   void intrusive_ptr_add_ref(cons* c)
   {
-    std::cout << "inc cons @ " << c << "\n";
+    //    std::cout << "inc cons @ " << c << "\n";
     c->count++;
   }
   
   void intrusive_ptr_release(cons* c)
   {
-    std::cout << "dec cons @ " << c << "\n";
+    //    std::cout << "dec cons @ " << c << "\n";
     c->count--;
     if (c->count == 0)
       delete c;
@@ -109,31 +115,42 @@ namespace client
   struct cons_print
   {
     typedef void result_type;
+    bool start;
     
     std::ostream& os;
 
-    cons_print(std::ostream& _os) : os(_os) { }
+    cons_print(std::ostream& _os) 
+      : start(false), os(_os) 
+    { }
 
     void operator()(double d)
     {
-      os << d << " ";
+      os << d;
     }
     
     void operator()(int i)
     {
-      os << i << " ";
+      os << i;
     }
     
     void operator()(const std::string& s)
     {
-      os << "'" << s << "' ";
+      os << s;
     }
     
     void operator()(const cons_ptr p)
     {
-      os << "ptr:" << p.get() << "\n";
-      if (!p) return;
+      if (!p) 
+	return;
+      if (boost::get<cons_ptr>(&p->car))
+	{
+	  os << "(";
+	}
       boost::apply_visitor(*this, p->car);
+      if (boost::get<cons_ptr>(&p->car))
+	os << ") ";
+      else if (!cons::nil(p->cdr))
+	os << " ";
       boost::apply_visitor(*this, p->cdr);
     }
   };
@@ -153,7 +170,7 @@ namespace client
   template <typename Iterator>
   struct calculator : qi::grammar<Iterator, cons_ptr(), ascii::space_type>
   {
-    boost::phoenix::function<client::process> p;
+    boost::phoenix::function<lisp::process> p;
 
     calculator() : calculator::base_type(sexpr)
     {
@@ -203,9 +220,7 @@ namespace client
       debug(sexpr);
     }
     
-    qi::rule<Iterator, 
-	     cons_ptr(), 
-	     ascii::space_type> 
+    qi::rule<Iterator, cons_ptr(), ascii::space_type> 
     atom, sexpr;
   };
 }
@@ -223,19 +238,12 @@ main()
   
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;
-  typedef client::calculator<iterator_type> calculator;
+  typedef lisp::calculator<iterator_type> calculator;
   
   calculator calc; // Our grammar
   
   std::string str;
   
-  client::cons_ptr a, b;
-  a = new client::cons; b = new client::cons;
-  a->cdr = b;
-  a->car = 3.14159;
-  b->cdr = std::string("SCHWING");
-  client::cons_print printer(std::cout);
-  printer(a);
   std::cout << "----------------------------\n";
 
   while (std::getline(std::cin, str))
@@ -245,15 +253,16 @@ main()
       
       std::string::const_iterator iter = str.begin();
       std::string::const_iterator end = str.end();
-      bool r = phrase_parse(iter, end, calc, space);
-      
+      lisp::cons_ptr result;
+      bool r = phrase_parse(iter, end, calc, space, result);
+
       if (r && iter == end)
         {
 	  std::cout << "-------------------------\n";
-	  std::cout << "Parsing succeeded\n";
-	  client::cons_print printer(std::cout);
-	  //r	  printer(bang);
-	  std::cout << "-------------------------\n";
+	  std::cout << "Parsing succeeded: ";
+	  lisp::cons_print printer(std::cout);
+	  printer(result);
+	  std::cout << "\n-------------------------\n";
         }
       else
         {
