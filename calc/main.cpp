@@ -1,12 +1,15 @@
 #include <boost/intrusive_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/config/warning_disable.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix1_functions.hpp>
+#include <boost/function.hpp>
 
 #include <iostream>
 #include <string>
+#include <map>
 
 namespace lisp
 {
@@ -16,36 +19,62 @@ namespace lisp
 
   struct nil {};
 
-  struct cons;
+  struct symbol : std::string
+  {
+    symbol(const std::string& s) : std::string(s) { }
+  };
 
+  struct cons;
   typedef boost::intrusive_ptr<cons> cons_ptr;
 
-  struct cons
-  {
+  struct context;
+  typedef boost::shared_ptr<context> context_ptr;
+
+  struct function;
+
+  typedef boost::variant<double,
+			 std::string,
+			 symbol,
+			 boost::recursive_wrapper<function>,
+			 cons_ptr>
+  variant;
+
+  struct function 
+  { 
+    typedef variant result_type;
+    typedef boost::function<variant(context_ptr, cons_ptr)> bf_t;
+    bf_t f;
+
+    function(bf_t _f) : f(_f) { }
+
+    variant operator()(context_ptr ctx, cons_ptr cns)
+    {
+      return f(ctx, cns);
+    }
+  };
+
+  struct cons {
+
     unsigned count;
 
-    typedef boost::variant<
-      std::string,
-      int,
-      double,
-      cons_ptr
-      >
-    type;
-
-    static bool nil(const type& v)
+    static bool nil(const variant& v)
     {
       const cons_ptr* p = boost::get<cons_ptr>(&v);
       return p && !*p;
     }
 
-    type car, cdr;
+    variant car, cdr;
     
     cons() : count(0),
 	     car(cons_ptr(0)),
 	     cdr(cons_ptr(0))
-    { 
-      //      std::cout << "  Creating cons @ " << this << "\n";
-    }
+    { }
+
+    template <typename T>
+    cons(T t) : count(0),
+		car(t),
+		cdr(cons_ptr(0))
+    { }
 
     ~cons()
     {
@@ -92,10 +121,9 @@ namespace lisp
 
     cons_ptr operator()(boost::iterator_range<std::string::const_iterator> r) const
     {
-      std::string s(r.begin(), r.end());
+      symbol id(std::string(r.begin(), r.end()));
       cons_ptr c = new cons;
-      c->car = s;
-      std::cout << "returning cons @ " << c.get() << "\n";
+      c->car = id;
       return c;
     }
 
@@ -138,6 +166,11 @@ namespace lisp
       os << s;
     }
     
+    void operator()(const symbol& s)
+    {
+      os << "symbol:" << s;
+    }
+    
     void operator()(const cons_ptr p)
     {
       if (!p) 
@@ -148,10 +181,15 @@ namespace lisp
 	}
       boost::apply_visitor(*this, p->car);
       if (boost::get<cons_ptr>(&p->car))
-	os << ") ";
-      else if (!cons::nil(p->cdr))
+	os << ")";
+      if (!cons::nil(p->cdr))
 	os << " ";
       boost::apply_visitor(*this, p->cdr);
+    }
+
+    void operator()(const function f)
+    {
+      os << "function@" << &f << "\n";
     }
   };
   
@@ -163,16 +201,13 @@ namespace lisp
     return os;
   }
 
-  
-  ///////////////////////////////////////////////////////////////////////////////
-  //  Our calculator grammar
-  ///////////////////////////////////////////////////////////////////////////////
   template <typename Iterator>
-  struct calculator : qi::grammar<Iterator, cons_ptr(), ascii::space_type>
+  struct interpreter 
+    : qi::grammar<Iterator, cons_ptr(), ascii::space_type>
   {
     boost::phoenix::function<lisp::process> p;
 
-    calculator() : calculator::base_type(sexpr)
+    interpreter() : interpreter::base_type(sexpr)
     {
       using namespace qi::labels;
       using ascii::alpha;
@@ -181,6 +216,7 @@ namespace lisp
       using qi::double_;
       using qi::int_;
       using qi::uint_;
+      using qi::lit;
       using qi::on_error;
       using qi::fail;
       using qi::debug;
@@ -190,19 +226,24 @@ namespace lisp
       using phoenix::construct;
       using phoenix::val;
       
+      // reserved = lit("setq")[_val 
+      //   = p(val(std::string("SETQ")))]
+      //;
 
       atom = 
-	(int_ >> !char_('.'))[_val = p(_1)]
-	| double_[_val = p(_1)]
+	/*(int_ >> !char_('.'))[_val = p(_1)]
+	  |*/ double_[_val = p(_1)]
 	| raw[lexeme[alpha >> *alnum >> !alnum]][_val = p(_1)]
 	;
       
-      sexpr = atom[_val = _1] 
+      sexpr = // reserved[_val = _1] | 
+	atom[_val = _1] 
 	| (char_("(") >> (*sexpr)[_val = p(_1)] >> char_(")"))
 	;
       
       atom.name("atom");
       sexpr.name("sexpr");
+      //      reserved.name("reserved");
       
       on_error<fail>
 	(
@@ -221,9 +262,97 @@ namespace lisp
     }
     
     qi::rule<Iterator, cons_ptr(), ascii::space_type> 
-    atom, sexpr;
+    atom, sexpr; //, reserved;
   };
+
+  //  std::hash_map<std::string, cons_ptr> table;
+
+  struct eval
+  {
+    typedef variant result_type;
+
+    context_ptr ctx;
+    eval(context_ptr _ctx) : ctx(_ctx) { }
+
+    variant operator()(double d)
+    {
+      return d;
+    }
+    
+    variant operator()(const std::string& s)
+    {
+      return s;
+    }
+    
+    variant operator()(const symbol& s)
+    {
+      return s;
+    }
+    
+    variant operator()(const function& p)
+    {
+      /*
+      if (!p) 
+	return;
+      if (boost::get<cons_ptr>(&p->car))
+	{
+	  os << "(";
+	}
+      boost::apply_visitor(*this, p->car);
+      if (boost::get<cons_ptr>(&p->car))
+	os << ")";
+      if (!cons::nil(p->cdr))
+	os << " ";
+      boost::apply_visitor(*this, p->cdr);
+      */
+    }
+
+    variant operator()(const cons_ptr& p)
+    {
+      function* f = boost::get<function>(&p->car);
+      if (f)
+	{
+	  cons_ptr args = boost::get<cons_ptr>(p->cdr);
+	  (*f)(ctx, args);
+	}
+      return p;
+    }
+  };
+  
+  struct context : boost::enable_shared_from_this<context>
+  {
+    std::map<std::string, variant> table;
+    context_ptr next;
+
+    context_ptr scope()
+    {
+      context_ptr ctx(new context);
+      ctx->next = shared_from_this();
+    }
+
+  };
+
+  context_ptr global;
+
+  struct plus
+  {
+    cons_ptr operator()(context_ptr c, cons_ptr l)
+    {
+      double sum = 0;
+      while(l)
+	{
+	  double& d = boost::get<double>(l->car);
+	  sum += d;
+	  l = boost::get<cons_ptr>(l->cdr);
+	}
+      return new cons(sum);
+    }
+  };
+
+  
 }
+
+using namespace lisp;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  Main program
@@ -236,32 +365,38 @@ main()
   std::cout << "/////////////////////////////////////////////////////////\n\n";
   std::cout << "Type an expression...or [q or Q] to quit\n\n";
   
+  global = context_ptr(new context);
+  global->table["add"] = function(plus());
+
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;
-  typedef lisp::calculator<iterator_type> calculator;
+  typedef lisp::interpreter<iterator_type> interpreter_t;
   
-  calculator calc; // Our grammar
+  interpreter_t lispi; // Our grammar
   
   std::string str;
   
-  std::cout << "----------------------------\n";
+  std::cout << "----------------------------\n> ";
 
   while (std::getline(std::cin, str))
     {
-      if (str.empty() || str[0] == 'q' || str[0] == 'Q')
-	break;
-      
       std::string::const_iterator iter = str.begin();
       std::string::const_iterator end = str.end();
       lisp::cons_ptr result;
-      bool r = phrase_parse(iter, end, calc, space, result);
+      bool r = phrase_parse(iter, end, lispi, space, result);
 
       if (r && iter == end)
         {
 	  std::cout << "-------------------------\n";
 	  std::cout << "Parsing succeeded: ";
 	  lisp::cons_print printer(std::cout);
-	  printer(result);
+	  try {
+	    eval e(global);
+	    variant out = e(result);
+	    //	    printer(out);
+	  } catch (const std::exception& e) {
+	    std::cout << "*** - EVAL exception caught: " << e.what() << "\n";
+	  }
 	  std::cout << "\n-------------------------\n";
         }
       else
@@ -270,9 +405,9 @@ main()
 	  std::cout << "Parsing failed\n";
 	  std::cout << "-------------------------\n";
         }
+      std::cout << "> ";
     }
   
-  std::cout << "Bye... :-) \n\n";
   return 0;
 }
 
