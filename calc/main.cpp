@@ -4,7 +4,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
-#include <boost/spirit/include/phoenix1_functions.hpp>
+#include <boost/spirit/home/phoenix/core/value.hpp>
 #include <boost/function.hpp>
 
 #include <iostream>
@@ -16,8 +16,6 @@ namespace lisp
   namespace qi = boost::spirit::qi;
   namespace phoenix = boost::phoenix;
   namespace ascii = boost::spirit::ascii;
-
-  struct nil {};
 
   struct symbol : std::string
   {
@@ -91,16 +89,19 @@ namespace lisp
       delete c;
   }
   
+  const static variant nil(cons_ptr(0));
+
   bool is_nil(const variant& v)
   {
     const cons_ptr p = boost::get<cons_ptr>(v);
-    return !p;
+    return p.get() == 0;
   }
 
   bool is_ptr(const variant& v)
   {
     return boost::get<cons_ptr>(&v);
   }
+
 
   struct process
   {
@@ -139,7 +140,6 @@ namespace lisp
 	}
       return head;
     }
-
   };
 
   struct parens
@@ -244,18 +244,22 @@ namespace lisp
     
     void operator()(const cons_ptr p)
     {
-      if (!p) return;
-
-      bool branch = is_ptr(p->car) && is_ptr(p->cdr);
+      if (!p) 
+	{
+	  os << "NIL";
+	  return;
+	}
+      bool branch = is_ptr(p->car) && !is_nil(p->car) && is_ptr(p->cdr);
       if (branch)
 	os << "(";
       boost::apply_visitor(*this, p->car);
       if (branch)
 	os << ")";
       if (is_ptr(p->cdr) && !is_nil(p->cdr))
-	os << " ";
-      boost::apply_visitor(*this, p->cdr);
-
+	{
+	  os << " ";
+	  boost::apply_visitor(*this, p->cdr);
+	}
     }
 
     void operator()(const function f)
@@ -265,6 +269,11 @@ namespace lisp
 
     void operator()(const variant v)
     {
+      if (is_nil(v)) 
+	{
+	  os << "NIL";
+	  return;
+	}
       bool branch = is_ptr(v);
       if (branch)
 	os << "(";
@@ -296,27 +305,25 @@ namespace lisp
       using boost::spirit::lexeme;
       using boost::spirit::raw;
       
-      using phoenix::construct;
-      using phoenix::val;
+      using namespace boost::phoenix;
       
-      // reserved = lit("setq")[_val 
-      //   = p(val(std::string("SETQ")))]
-      //;
-
       atom = 
 	//(int_ >> !char_('.'))[_val = p(_1)]
 	double_[_val = p(_1)]
 	| raw[lexeme[alpha >> *alnum >> !alnum]][_val = p(_1)]
       	;
       
-      sexpr = // reserved[_val = _1] | 
-	atom[_val = _1] 
-	| (char_("(") >> (*sexpr)[_val = p(_1)] >> char_(")"))
+      nil_p = (char_("(") >> char_(")"));
+
+      sexpr =
+	atom   [ _val = _1 ] 
+	| nil_p[ _val = val(nil) ]
+	| (char_("(") >> (+sexpr)[ _val = p(_1) ] >> char_(")"))
 	;
       
+      nil_p.name("nil");
       atom.name("atom");
       sexpr.name("sexpr");
-      //      reserved.name("reserved");
       
       on_error<fail>
 	(
@@ -330,15 +337,14 @@ namespace lisp
 	 << std::endl
 	 );
       
+      debug(nil_p);
       debug(atom);
       debug(sexpr);
     }
     
     qi::rule<Iterator, variant(), ascii::space_type> 
-    atom, sexpr; //, reserved;
+	atom, sexpr, nil_p;
   };
-
-  //  std::hash_map<std::string, cons_ptr> table;
 
   struct eval
   {
