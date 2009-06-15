@@ -43,6 +43,9 @@ namespace lisp
     typedef boost::function<variant(context_ptr, cons_ptr)> bf_t;
     bf_t f;
 
+    std::string name;
+
+    function() { }
     function(bf_t _f) : f(_f) { }
 
     variant operator()(context_ptr ctx, cons_ptr cns)
@@ -192,7 +195,7 @@ namespace lisp
 
     void operator()(const function f)
     {
-      os << "function@" << &f << "\n";
+      os << "function@" << &f << " \"" << f.name << "\"\n";
     }
 
     void operator()(const variant v)
@@ -269,7 +272,7 @@ namespace lisp
 
     void operator()(const variant v)
     {
-      if (is_nil(v)) 
+      if (is_ptr(v) && is_nil(v)) 
 	{
 	  os << "NIL";
 	  return;
@@ -307,21 +310,27 @@ namespace lisp
       
       using namespace boost::phoenix;
       
+      identifier = 
+	raw[lexeme[+(alnum | '+' | '-' | '*' | '/')]][_val = p(_1)];
+
       atom = 
 	//(int_ >> !char_('.'))[_val = p(_1)]
 	double_[_val = p(_1)]
-	| raw[lexeme[alpha >> *alnum >> !alnum]][_val = p(_1)]
+	| identifier [_val = _1 ]
+	//	| raw[lexeme[//+identifier >> !identifier
+	//		     alpha >> *alnum >> !alnum
+	//		     ]][_val = p(_1)]
       	;
       
-      nil_p = (char_("(") >> char_(")"));
+      nil = (char_("(") >> char_(")"));
 
       sexpr =
 	atom   [ _val = _1 ] 
-	| nil_p[ _val = val(nil) ]
+	| nil[ _val = val(::lisp::nil) ]
 	| (char_("(") >> (+sexpr)[ _val = p(_1) ] >> char_(")"))
 	;
       
-      nil_p.name("nil");
+      nil.name("nil");
       atom.name("atom");
       sexpr.name("sexpr");
       
@@ -337,14 +346,101 @@ namespace lisp
 	 << std::endl
 	 );
       
-      debug(nil_p);
+      debug(nil);
       debug(atom);
       debug(sexpr);
+      debug(identifier);
     }
     
     qi::rule<Iterator, variant(), ascii::space_type> 
-	atom, sexpr, nil_p;
+    atom, sexpr, nil, identifier;
+
+    //    qi::rule<Iterator, int(), ascii::space_type> 
+    //    identifier;
+
   };
+
+  struct context : boost::enable_shared_from_this<context>
+  {
+    std::map<std::string, variant> table;
+    std::map<std::string, function> fns;
+
+    context_ptr next;
+
+    context_ptr scope()
+    {
+      context_ptr ctx(new context);
+      ctx->next = shared_from_this();
+    }
+
+  };
+
+  context_ptr global;
+
+  namespace ops 
+  {
+    struct plus
+    {
+      variant operator()(context_ptr c, cons_ptr l)
+      {
+	double sum = 0;
+	while(l)
+	  {
+	    double& d = boost::get<double>(l->car);
+	    sum += d;
+	    l = boost::get<cons_ptr>(l->cdr);
+	  }
+	return sum;
+      }
+    };
+
+    struct minus
+    {
+      variant operator()(context_ptr c, cons_ptr l)
+      {
+	double r = 0;
+	while(l)
+	  {
+	    double& d = boost::get<double>(l->car);
+	    r -= d;
+	    l = boost::get<cons_ptr>(l->cdr);
+	  }
+	return r;
+      }
+    };
+
+    struct multiplies
+    {
+      variant operator()(context_ptr c, cons_ptr l)
+      {
+	double r = 1;
+	while(l)
+	  {
+	    double& d = boost::get<double>(l->car);
+	    r *= d;
+	    l = boost::get<cons_ptr>(l->cdr);
+	  }
+	return r;
+      }
+    };
+
+    struct divides
+    {
+      variant operator()(context_ptr c, cons_ptr l)
+      {
+	double r = 1;
+	while(l)
+	  {
+	    double& d = boost::get<double>(l->car);
+	    r /= d;
+	    l = boost::get<cons_ptr>(l->cdr);
+	  }
+	return r;
+      }
+    };
+  }
+    
+#define SHOW std::cout << __PRETTY_FUNCTION__ << "\n"
 
   struct eval
   {
@@ -355,27 +451,32 @@ namespace lisp
 
     variant operator()(double d)
     {
+      SHOW;
       return d;
     }
     
     variant operator()(variant v)
     {
+      SHOW;
       eval eprime(ctx);
-      boost::apply_visitor(eprime, v);
+      return boost::apply_visitor(eprime, v);
     }
     
     variant operator()(const std::string& s)
     {
+      SHOW;
       return s;
     }
     
     variant operator()(const symbol& s)
     {
+      SHOW;
       return s;
     }
     
     variant operator()(const function& p)
     {
+      SHOW;
       /*
       if (!p) 
 	return;
@@ -390,50 +491,18 @@ namespace lisp
 	os << " ";
       boost::apply_visitor(*this, p->cdr);
       */
+      return 1313;
     }
 
     variant operator()(const cons_ptr& p)
     {
-      function* f = boost::get<function>(&p->car);
-      if (f)
-	{
-	  cons_ptr args = boost::get<cons_ptr>(p->cdr);
-	  (*f)(ctx, args);
-	}
-      return p;
+      symbol sym = boost::get<symbol>(p->car);
+      function f = ctx->fns[sym];
+      cons_ptr args = boost::get<cons_ptr>(p->cdr);
+      return f(ctx, args);
     }
   };
   
-  struct context : boost::enable_shared_from_this<context>
-  {
-    std::map<std::string, variant> table;
-    context_ptr next;
-
-    context_ptr scope()
-    {
-      context_ptr ctx(new context);
-      ctx->next = shared_from_this();
-    }
-
-  };
-
-  context_ptr global;
-
-  struct plus
-  {
-    cons_ptr operator()(context_ptr c, cons_ptr l)
-    {
-      double sum = 0;
-      while(l)
-	{
-	  double& d = boost::get<double>(l->car);
-	  sum += d;
-	  l = boost::get<cons_ptr>(l->cdr);
-	}
-      return new cons(sum);
-    }
-  };
-
   
 }
 
@@ -451,7 +520,11 @@ main()
   std::cout << "Type an expression...or [q or Q] to quit\n\n";
   
   global = context_ptr(new context);
-  global->table["add"] = function(plus());
+
+  global->fns["+"] = lisp::function(lisp::ops::plus());
+  global->fns["-"] = lisp::function(lisp::ops::minus());
+  global->fns["*"] = lisp::function(lisp::ops::multiplies());
+  global->fns["/"] = lisp::function(lisp::ops::divides());
 
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;
@@ -481,13 +554,14 @@ main()
 	  std::cout << "\n" << str << "\n";
 	  lisp::cons_print pretty(std::cout);
 	  pretty(result);
-	  //	  try {
-	  //	    eval e(global);
-	  //	    variant out = e(result);
-	  //	    printer(out);
-	  //	  } catch (const std::exception& e) {
-	  //	    std::cout << "*** - EVAL exception caught: " << e.what() << "\n";
-	  //	  }
+	  try {
+	    eval e(global);
+	    variant out = e(result);
+	    printer(out);
+	    pretty(out);
+	  } catch (const std::exception& e) {
+	    std::cout << "*** - EVAL exception caught: " << e.what() << "\n";
+	  }
 	  std::cout << "\n-------------------------\n";
         }
       else
