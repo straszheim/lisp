@@ -71,10 +71,7 @@ namespace lisp
 		cdr(cons_ptr(0))
     { }
 
-    ~cons()
-    {
-      //      std::cout << "destroying cons @ " << this << "\n";
-    }
+    ~cons() { }
     
   };
 
@@ -126,7 +123,6 @@ namespace lisp
 
     variant operator()(const std::vector<variant>& v) const
     {
-      std::cout << "**** BING " << v.size() << "\n";
       cons_ptr head = new cons;
       cons_ptr tmp = head;
       // chain them together
@@ -291,8 +287,8 @@ namespace lisp
     : qi::grammar<Iterator, variant(), ascii::space_type>
   {
     boost::phoenix::function<lisp::process> p;
-
-    interpreter() : interpreter::base_type(sexpr)
+    bool show_debug;
+    interpreter(bool _show_debug) : interpreter::base_type(sexpr), show_debug(_show_debug)
     {
       using namespace qi::labels;
       using ascii::alpha;
@@ -311,28 +307,21 @@ namespace lisp
       using namespace boost::phoenix;
       
       identifier = 
-	raw[lexeme[+(alnum | '+' | '-' | '*' | '/')]][_val = p(_1)];
+	  raw[lexeme[+(alnum | '+' | '-' | '*' | '/')]][_val = p(_1)];
 
-      atom = 
-	//(int_ >> !char_('.'))[_val = p(_1)]
-	double_[_val = p(_1)]
-	| identifier [_val = _1 ]
-	//	| raw[lexeme[//+identifier >> !identifier
-	//		     alpha >> *alnum >> !alnum
-	//		     ]][_val = p(_1)]
+      atom =
+          double_      [ _val = p(_1) ]
+	| identifier   [ _val = _1    ]
       	;
       
-      nil = (char_("(") >> char_(")"));
+      nil = 
+          (char_("(") >> char_(")"));
 
       sexpr =
-	atom   [ _val = _1 ] 
-	| nil[ _val = val(::lisp::nil) ]
-	| (char_("(") >> (+sexpr)[ _val = p(_1) ] >> char_(")"))
+	  atom                    [ _val = _1 ] 
+	| nil                     [ _val = val(::lisp::nil) ]
+	| (char_("(") >> (+sexpr) [ _val = p(_1) ] >> char_(")"))
 	;
-      
-      nil.name("nil");
-      atom.name("atom");
-      sexpr.name("sexpr");
       
       on_error<fail>
 	(
@@ -346,10 +335,17 @@ namespace lisp
 	 << std::endl
 	 );
       
-      debug(nil);
-      debug(atom);
-      debug(sexpr);
-      debug(identifier);
+      if (show_debug)
+	{
+	  nil.name("nil");
+	  atom.name("atom");
+	  sexpr.name("sexpr");
+      
+	  debug(nil);
+	  debug(atom);
+	  debug(sexpr);
+	  debug(identifier);
+	}
     }
     
     qi::rule<Iterator, variant(), ascii::space_type> 
@@ -377,70 +373,8 @@ namespace lisp
 
   context_ptr global;
 
-  namespace ops 
-  {
-    struct plus
-    {
-      variant operator()(context_ptr c, cons_ptr l)
-      {
-	double sum = 0;
-	while(l)
-	  {
-	    double& d = boost::get<double>(l->car);
-	    sum += d;
-	    l = boost::get<cons_ptr>(l->cdr);
-	  }
-	return sum;
-      }
-    };
-
-    struct minus
-    {
-      variant operator()(context_ptr c, cons_ptr l)
-      {
-	double r = 0;
-	while(l)
-	  {
-	    double& d = boost::get<double>(l->car);
-	    r -= d;
-	    l = boost::get<cons_ptr>(l->cdr);
-	  }
-	return r;
-      }
-    };
-
-    struct multiplies
-    {
-      variant operator()(context_ptr c, cons_ptr l)
-      {
-	double r = 1;
-	while(l)
-	  {
-	    double& d = boost::get<double>(l->car);
-	    r *= d;
-	    l = boost::get<cons_ptr>(l->cdr);
-	  }
-	return r;
-      }
-    };
-
-    struct divides
-    {
-      variant operator()(context_ptr c, cons_ptr l)
-      {
-	double r = 1;
-	while(l)
-	  {
-	    double& d = boost::get<double>(l->car);
-	    r /= d;
-	    l = boost::get<cons_ptr>(l->cdr);
-	  }
-	return r;
-      }
-    };
-  }
-    
-#define SHOW std::cout << __PRETTY_FUNCTION__ << "\n"
+  //#define SHOW std::cout << __PRETTY_FUNCTION__ << "\n"
+#define SHOW
 
   struct eval
   {
@@ -503,7 +437,54 @@ namespace lisp
     }
   };
   
-  
+  template <typename Op>
+  struct op
+  {
+    const double initial;
+    Op op_;
+
+    op(double i) : initial(i) { }
+
+    variant operator()(context_ptr c, cons_ptr l)
+    {
+      double r = initial;
+      eval e(c);
+      while(l)
+	{
+	  variant evalled = boost::apply_visitor(e, l->car);
+	  double n = boost::get<double>(evalled);
+	  r = op_(r, n);
+	  l = boost::get<cons_ptr>(l->cdr);
+	}
+      return r;
+    }
+  };
+
+  namespace ops 
+  {
+    struct divides
+    {
+      variant operator()(context_ptr c, cons_ptr l)
+      {
+	eval e(c);
+	variant evalled = boost::apply_visitor(e, l->car);
+	double r = boost::get<double>(evalled);
+	l = boost::get<cons_ptr>(l->cdr);
+
+	if (! l)
+	  return 1.0 / r;
+
+	while(l)
+	  {
+	    variant evalled = boost::apply_visitor(e, l->car);
+	    double n = boost::get<double>(evalled);
+	    r /= n;
+	    l = boost::get<cons_ptr>(l->cdr);
+	  }
+	return r;
+      }
+    };
+  }
 }
 
 using namespace lisp;
@@ -512,25 +493,31 @@ using namespace lisp;
 //  Main program
 ///////////////////////////////////////////////////////////////////////////////
 int
-main()
+main(int argc, char** argv)
 {
-  std::cout << "/////////////////////////////////////////////////////////\n\n";
-  std::cout << "Expression parser...\n\n";
-  std::cout << "/////////////////////////////////////////////////////////\n\n";
-  std::cout << "Type an expression...or [q or Q] to quit\n\n";
+  std::cout << "A lisp interpreting plaything\n(c) 2009 Troy D. Straszheim\n";
   
+  std::vector<std::string> args(argv, argv+argc);
+  bool debug = false;
+
+  if (argc > 1)
+    {
+      if (args[1] == "-d")
+	debug = true;
+    }
+
   global = context_ptr(new context);
 
-  global->fns["+"] = lisp::function(lisp::ops::plus());
-  global->fns["-"] = lisp::function(lisp::ops::minus());
-  global->fns["*"] = lisp::function(lisp::ops::multiplies());
+  global->fns["+"] = lisp::function(lisp::op<std::plus<double> >(0));
+  global->fns["-"] = lisp::function(lisp::op<std::minus<double> >(0));
+  global->fns["*"] = lisp::function(lisp::op<std::multiplies<double> >(1));
   global->fns["/"] = lisp::function(lisp::ops::divides());
 
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;
   typedef lisp::interpreter<iterator_type> interpreter_t;
   
-  interpreter_t lispi; // Our grammar
+  interpreter_t lispi(debug); // Our grammar
   
   std::string str;
   
@@ -543,36 +530,42 @@ main()
       lisp::variant result;
       bool r = phrase_parse(iter, end, lispi, space, result);
 
+      lisp::cons_debug dbg(std::cout);
+      lisp::cons_print repr(std::cout);
+
       if (r && iter == end)
         {
-	  std::cout << "-------------------------\n";
-	  std::cout << "Parsing succeeded: ";
 	  cons_ptr c = new cons(result);
 
-	  lisp::cons_debug printer(std::cout);
-	  printer(result);
-	  std::cout << "\n" << str << "\n";
-	  lisp::cons_print pretty(std::cout);
-	  pretty(result);
+	  if (debug)
+	    {
+	      dbg(result);
+	      std::cout << "\n";
+	      repr(result);
+	      std::cout << "\n";
+	    }
+
 	  try {
 	    eval e(global);
 	    variant out = e(result);
-	    printer(out);
-	    pretty(out);
+	    if (debug)
+	      {
+		dbg(out);
+		std::cout << "\n";
+	      }
+	    repr(out);
+	    std::cout << "\n";
 	  } catch (const std::exception& e) {
 	    std::cout << "*** - EVAL exception caught: " << e.what() << "\n";
 	  }
-	  std::cout << "\n-------------------------\n";
         }
       else
         {
-	  std::cout << "-------------------------\n";
-	  std::cout << "Parsing failed\n";
-	  std::cout << "-------------------------\n";
+	  std::cout << "Error, parsing failed\n";
         }
       std::cout << "> ";
     }
-  
+  std::cout << "Ciao.\n";
   return 0;
 }
 
