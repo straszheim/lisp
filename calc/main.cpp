@@ -4,6 +4,9 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_container.hpp>
+#include <boost/spirit/include/phoenix_statement.hpp>
 #include <boost/spirit/home/phoenix/core/value.hpp>
 #include <boost/function.hpp>
 
@@ -105,7 +108,7 @@ namespace lisp
 
   struct process
   {
-    template <typename T>
+    template <typename T = void, typename U = void>
     struct result
     {
       typedef variant type;
@@ -137,6 +140,19 @@ namespace lisp
 	  tmp = tail;
 	  tmp->car = v[i];
 	}
+      return head;
+    }
+    // currently only used for quote
+    variant operator()(char c, const variant& v) const
+    {
+      if (c != '\'')
+	throw std::runtime_error("we shouldn't ever see this");
+      std::cout << __PRETTY_FUNCTION__ << "\n";
+      cons_ptr head = new cons;
+      
+      head->car = symbol("quote");
+      head->cdr = v;
+
       return head;
     }
   };
@@ -321,6 +337,7 @@ namespace lisp
 	  atom                    [ _val = _1 ] 
 	| nil                     [ _val = val(::lisp::nil) ]
 	| (char_("(") >> (+sexpr) [ _val = p(_1) ] >> char_(")"))
+	| (char_("'") >> sexpr)   [ _val = p(_1, _2) ]
 	;
       
       on_error<fail>
@@ -340,7 +357,8 @@ namespace lisp
 	  nil.name("nil");
 	  atom.name("atom");
 	  sexpr.name("sexpr");
-      
+	  identifier.name("identifier");
+
 	  debug(nil);
 	  debug(atom);
 	  debug(sexpr);
@@ -462,6 +480,14 @@ namespace lisp
 
   namespace ops 
   {
+    struct quote
+    {
+      variant operator()(context_ptr c, cons_ptr l)
+      {
+	return l; // no-op.  the 'quote' has been removed from the list already.
+      }
+    };
+
     struct divides
     {
       variant operator()(context_ptr c, cons_ptr l)
@@ -512,6 +538,7 @@ main(int argc, char** argv)
   global->fns["-"] = lisp::function(lisp::op<std::minus<double> >(0));
   global->fns["*"] = lisp::function(lisp::op<std::multiplies<double> >(1));
   global->fns["/"] = lisp::function(lisp::ops::divides());
+  global->fns["quote"] = lisp::function(lisp::ops::quote());
 
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;
@@ -539,8 +566,9 @@ main(int argc, char** argv)
 
 	  if (debug)
 	    {
+	      std::cout << "\nparsed as> ";
 	      dbg(result);
-	      std::cout << "\n";
+	      std::cout << "\nparsed as> ";
 	      repr(result);
 	      std::cout << "\n";
 	    }
@@ -550,6 +578,7 @@ main(int argc, char** argv)
 	    variant out = e(result);
 	    if (debug)
 	      {
+		std::cout << "\evalled to> ";
 		dbg(out);
 		std::cout << "\n";
 	      }
