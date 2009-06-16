@@ -6,12 +6,12 @@
 
 namespace lisp 
 {
-  struct eval
+  struct eval_visitor
   {
     typedef variant result_type;
 
     context_ptr ctx;
-    eval(context_ptr _ctx);
+    eval_visitor(context_ptr _ctx);
 
     variant operator()(double d);
     
@@ -25,6 +25,9 @@ namespace lisp
 
     variant operator()(const cons_ptr& p);
   };
+
+  variant eval(context_ptr& ctx, variant& v);
+
 }
 
 #endif

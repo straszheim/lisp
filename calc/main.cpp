@@ -410,8 +410,7 @@ main(int argc, char** argv)
 	    }
 
 	  try {
-	    eval e(global);
-	    variant out = e(result);
+	    variant out = eval(global, result);
 	    if (debug)
 	      {
 		std::cout << "\nevalled to> ";

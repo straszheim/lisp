@@ -5,14 +5,21 @@
 
 namespace lisp {
   namespace ops {
+    /*
+    */
 
     template <typename Op>
     variant op<Op>::operator()(context_ptr c, variant v)
     {
       cons_ptr l = boost::get<cons_ptr>(v);
+      while(l)
+	{
+	  l->car = eval(c, l->car);
+	  l = boost::get<cons_ptr>(l->cdr);
+	}
 
       double r = initial;
-      eval e(c);
+
       while(l)
 	{
 	  double n = boost::get<double>(l->car);
@@ -39,7 +46,22 @@ namespace lisp {
       return nc;
     }
 
+    variant quote::operator()(context_ptr c, variant v)
+    {
+      return v;
+    }
+
     variant list::operator()(context_ptr c, variant v)
+    {
+      cons_ptr l = boost::get<cons_ptr>(v);
+      while(l) { 
+	l->car = eval(c, l->car);
+	l = boost::get<cons_ptr>(l->cdr);
+      }
+      return v;
+    }
+
+    variant defvar::operator()(context_ptr c, variant v)
     {
       return v;
     }
@@ -47,8 +69,12 @@ namespace lisp {
     variant divides::operator()(context_ptr c, variant v)
     {
       cons_ptr l = boost::get<cons_ptr>(v);
+      while(l)
+	{
+	  l->car = eval(c, l->car);
+	  l = boost::get<cons_ptr>(l->cdr);
+	}
 
-      eval e(c);
       double r = boost::get<double>(l->car);
       l = boost::get<cons_ptr>(l->cdr);
 
