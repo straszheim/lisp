@@ -8,4 +8,5 @@ namespace lisp
     return f(ctx, cns);
   }
 
+  const variant nil(cons_ptr(0));
 }

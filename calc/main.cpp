@@ -18,6 +18,8 @@
 #include "ops.hpp"
 #include "context.hpp"
 #include "eval.hpp"
+#include "debug.hpp"
+#include "print.hpp"
 
 namespace lisp
 {
@@ -26,19 +28,6 @@ namespace lisp
   namespace ascii = boost::spirit::ascii;
 
   
-  const static variant nil(cons_ptr(0));
-
-  bool is_nil(const variant& v)
-  {
-    const cons_ptr p = boost::get<cons_ptr>(v);
-    return p.get() == 0;
-  }
-
-  bool is_ptr(const variant& v)
-  {
-    return boost::get<cons_ptr>(&v);
-  }
-
 
   struct process
   {
@@ -113,146 +102,6 @@ namespace lisp
     ~parens() { os << ")"; }
   };
 
-  struct cons_debug
-  {
-    typedef void result_type;
-    
-    std::ostream& os;
-
-    cons_debug(std::ostream& _os) 
-      : os(_os) 
-    { }
-
-    void operator()(double d)
-    {
-      os << "(double:" << d << ")";
-    }
-    
-    void operator()(const std::string& s)
-    {
-      os << "\"" << s << "\"";
-    }
-    
-    void operator()(const symbol& s)
-    {
-      os << "symbol:" << s;
-    }
-    
-    void operator()(const cons_ptr p)
-    {
-      if (!p)
-	{
-	  os << "NIL";
-	  return;
-	}
-      os << "(cons @" << p.get() << " car:";
-      boost::apply_visitor(*this, p->car);
-
-      os << " cdr:";
-      boost::apply_visitor(*this, p->cdr);
-
-      os << ")";
-    }
-
-    void operator()(const function f)
-    {
-      os << "function@" << &f << " \"" << f.name << "\"\n";
-    }
-
-    void operator()(const variant v)
-    {
-      boost::apply_visitor(*this, v);
-    }
-  };
-  
-  std::ostream& operator<<(std::ostream& os,
-			   cons_ptr cp)
-  {
-    cons_debug printer(os);
-    printer(cp);
-    return os;
-  }
-
-  std::ostream& operator<<(std::ostream& os,
-			   variant v)
-  {
-    cons_debug printer(os);
-    printer(v);
-    return os;
-  }
-
-  struct cons_print
-  {
-    typedef void result_type;
-    
-    std::ostream& os;
-
-    cons_print(std::ostream& _os) 
-      : os(_os) 
-    { }
-
-    void operator()(double d)
-    {
-      os << d;
-    }
-    
-    void operator()(const std::string& s)
-    {
-      os << "\"" << s << "\"";
-    }
-    
-    void operator()(const symbol& s)
-    {
-      os << s;
-    }
-    
-    void operator()(const cons_ptr p)
-    {
-      if (!p) 
-	{
-	  os << "NIL";
-	  return;
-	}
-      bool branch = is_ptr(p->car) && !is_nil(p->car) && is_ptr(p->cdr);
-      if (branch)
-	os << "(";
-      boost::apply_visitor(*this, p->car);
-      if (branch)
-	os << ")";
-      bool recur = false;
-      if (is_ptr(p->cdr) && !is_nil(p->cdr))
-	{
-	  os << " ";
-	  boost::apply_visitor(*this, p->cdr);
-	}
-      if (!is_ptr(p->cdr))
-	{
-	  os << " . ";
-	  boost::apply_visitor(*this, p->cdr);
-	}
-    }
-
-    void operator()(const function f)
-    {
-      os << "function@" << &f << "\n";
-    }
-
-    void operator()(const variant v)
-    {
-      if (is_ptr(v) && is_nil(v)) 
-	{
-	  os << "NIL";
-	  return;
-	}
-      bool branch = is_ptr(v);
-      if (branch)
-	os << "(";
-      boost::apply_visitor(*this, v);
-      if (branch)
-	os << ")";
-    }
-  };
-  
   template <typename Iterator>
   struct interpreter 
     : qi::grammar<Iterator, variant(), ascii::space_type>

@@ -78,6 +78,20 @@ namespace lisp {
     if (c->count == 0)
       delete c;
   }
+
+  inline bool is_nil(const variant& v)
+  {
+    const cons_ptr p = boost::get<cons_ptr>(v);
+    return p.get() == 0;
+  }
+
+  inline bool is_ptr(const variant& v)
+  {
+    return boost::get<cons_ptr>(&v);
+  }
+  
+  extern const variant nil;
+
 }
 
 #endif
