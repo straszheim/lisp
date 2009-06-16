@@ -56,7 +56,16 @@ namespace lisp
   variant eval::operator()(const cons_ptr& p)
   {
     symbol sym = boost::get<symbol>(p->car);
+    if (sym == "quote")
+      return p->cdr;
     function f = ctx->fns[sym];
+    cons_ptr l = boost::get<cons_ptr>(p->cdr);
+    while(l)
+      {
+	l->car = boost::apply_visitor(*this, l->car);
+	l = boost::get<cons_ptr>(l->cdr);
+      }
+
     return f(ctx, p->cdr);
   }
 
