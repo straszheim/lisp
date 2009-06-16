@@ -1,4 +1,7 @@
+#include <iostream>
 #include "print.hpp"
+
+#define SHOW std::cerr << __PRETTY_FUNCTION__ << "\n"
 
 namespace lisp {
 
@@ -8,21 +11,25 @@ namespace lisp {
 
   void cons_print::operator()(double d) const
   {
+    SHOW;
     os << d;
   }
     
   void cons_print::operator()(const std::string& s) const
   {
+    SHOW;
     os << "\"" << s << "\"";
   }
     
   void cons_print::operator()(const symbol& s) const
   {
+    SHOW;
     os << s;
   }
     
   void cons_print::operator()(const cons_ptr p) const
   {
+    SHOW;
     if (!p) 
       {
 	os << "NIL";
@@ -49,11 +56,13 @@ namespace lisp {
 
   void cons_print::operator()(const function f) const
   {
+    SHOW;
     os << "function@" << &f << "\n";
   }
 
   void cons_print::operator()(const variant v) const
   {
+    SHOW;
     if (is_ptr(v) && is_nil(v)) 
       {
 	os << "NIL";

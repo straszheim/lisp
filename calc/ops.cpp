@@ -1,16 +1,20 @@
+#include <iostream>
+
 #include "types.hpp"
 #include "ops.hpp"
 #include "context.hpp"
 #include "eval.hpp"
+#include "print.hpp"
+
+#define SHOW std::cerr << __PRETTY_FUNCTION__ << "\n"
 
 namespace lisp {
   namespace ops {
-    /*
-    */
 
     template <typename Op>
     variant op<Op>::operator()(context_ptr c, variant v)
     {
+      SHOW;
       cons_ptr l = boost::get<cons_ptr>(v);
       while(l)
 	{
@@ -39,6 +43,7 @@ namespace lisp {
 
     variant cons::operator()(context_ptr c, variant v)
     {
+      SHOW;
       cons_ptr a1 = boost::get<cons_ptr>(v);
       cons_ptr a2 = boost::get<cons_ptr>(a1->cdr);
       cons_ptr nc = new lisp::cons;
@@ -49,11 +54,13 @@ namespace lisp {
 
     variant quote::operator()(context_ptr c, variant v)
     {
+      SHOW;
       return v;
     }
 
     variant list::operator()(context_ptr c, variant v)
     {
+      SHOW;
       cons_ptr l = boost::get<cons_ptr>(v);
       while(l) { 
 	l->car = eval(c, l->car);
@@ -64,6 +71,7 @@ namespace lisp {
 
     variant defvar::operator()(context_ptr ctx, variant v)
     {
+      SHOW;
       cons_ptr c = boost::get<cons_ptr>(v);
       symbol s = boost::get<symbol>(c->car);
       cons_ptr next = boost::get<cons_ptr>(c->cdr);
@@ -72,8 +80,19 @@ namespace lisp {
       return s;
     }
 
+    variant print::operator()(context_ptr ctx, variant v)
+    {
+      SHOW;
+      cons_ptr arg = boost::get<cons_ptr>(v);
+      variant evalled = eval(ctx, arg->car);
+      cons_print cp(std::cout);
+      cp(evalled);
+      return evalled;
+    }
+
     variant divides::operator()(context_ptr c, variant v)
     {
+      SHOW;
       cons_ptr l = boost::get<cons_ptr>(v);
       while(l)
 	{

@@ -27,8 +27,6 @@ namespace lisp
   namespace phoenix = boost::phoenix;
   namespace ascii = boost::spirit::ascii;
 
-  
-
   struct process
   {
     template <typename T = void, typename U = void, typename V = void>
@@ -218,6 +216,7 @@ main(int argc, char** argv)
   global->fns["cons"] = lisp::function(lisp::ops::cons());
   global->fns["list"] = lisp::function(lisp::ops::list());
   global->fns["defvar"] = lisp::function(lisp::ops::defvar());
+  global->fns["print"] = lisp::function(lisp::ops::print());
 
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;
