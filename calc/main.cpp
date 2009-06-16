@@ -270,9 +270,15 @@ namespace lisp
       boost::apply_visitor(*this, p->car);
       if (branch)
 	os << ")";
+      bool recur = false;
       if (is_ptr(p->cdr) && !is_nil(p->cdr))
 	{
 	  os << " ";
+	  boost::apply_visitor(*this, p->cdr);
+	}
+      if (!is_ptr(p->cdr))
+	{
+	  os << " . ";
 	  boost::apply_visitor(*this, p->cdr);
 	}
     }
@@ -496,6 +502,19 @@ namespace lisp
       }
     };
 
+    struct cons
+    {
+      variant operator()(context_ptr c, variant v)
+      {
+	cons_ptr a1 = boost::get<cons_ptr>(v);
+	cons_ptr a2 = boost::get<cons_ptr>(a1->cdr);
+	cons_ptr nc = new lisp::cons;
+	nc->car = a1->car;
+	nc->cdr = a2->car;
+	return nc;
+      }
+    };
+
     struct divides
     {
       variant operator()(context_ptr c, variant v)
@@ -549,6 +568,7 @@ main(int argc, char** argv)
   global->fns["*"] = lisp::function(lisp::op<std::multiplies<double> >(1));
   global->fns["/"] = lisp::function(lisp::ops::divides());
   global->fns["quote"] = lisp::function(lisp::ops::quote());
+  global->fns["cons"] = lisp::function(lisp::ops::cons());
 
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;
