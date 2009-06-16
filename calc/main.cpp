@@ -43,7 +43,7 @@ namespace lisp
   struct function 
   { 
     typedef variant result_type;
-    typedef boost::function<variant(context_ptr, cons_ptr)> bf_t;
+    typedef boost::function<variant(context_ptr, variant)> bf_t;
     bf_t f;
 
     std::string name;
@@ -51,7 +51,7 @@ namespace lisp
     function() { }
     function(bf_t _f) : f(_f) { }
 
-    variant operator()(context_ptr ctx, cons_ptr cns)
+    variant operator()(context_ptr& ctx, variant& cns)
     {
       return f(ctx, cns);
     }
@@ -108,7 +108,7 @@ namespace lisp
 
   struct process
   {
-    template <typename T = void, typename U = void>
+    template <typename T = void, typename U = void, typename V = void>
     struct result
     {
       typedef variant type;
@@ -145,8 +145,8 @@ namespace lisp
     // currently only used for quote
     variant operator()(char c, const variant& v) const
     {
-      if (c != '\'')
-	throw std::runtime_error("we shouldn't ever see this");
+      //      if (c != '\'')
+      //	throw std::runtime_error("we shouldn't ever see this");
       std::cout << __PRETTY_FUNCTION__ << "\n";
       cons_ptr head = new cons;
       
@@ -334,12 +334,17 @@ namespace lisp
           (char_("(") >> char_(")"));
 
       sexpr =
-	  atom                    [ _val = _1 ] 
-	| nil                     [ _val = val(::lisp::nil) ]
-	| (char_("(") >> (+sexpr) [ _val = p(_1) ] >> char_(")"))
-	| (char_("'") >> sexpr)   [ _val = p(_1, _2) ]
+	  atom                      [ _val = _1 ] 
+	| nil                       [ _val = val(::lisp::nil) ]
+	| (char_("'") >> sexpr)     [ _val = p(_1, _2) ]
+	| quote                     [ _val = _1 ]
+	| (char_("(") >> (+sexpr)   [ _val = p(_1) ] >> char_(")"))
 	;
       
+      quote = 
+          (char_("(") >> "quote" >> sexpr >> char_(")"))   [ _val = p(_1, _2) ]
+	;
+
       on_error<fail>
 	(
 	 sexpr
@@ -358,16 +363,18 @@ namespace lisp
 	  atom.name("atom");
 	  sexpr.name("sexpr");
 	  identifier.name("identifier");
+	  quote.name("quote");
 
 	  debug(nil);
 	  debug(atom);
 	  debug(sexpr);
 	  debug(identifier);
+	  debug(quote);
 	}
     }
     
     qi::rule<Iterator, variant(), ascii::space_type> 
-    atom, sexpr, nil, identifier;
+    atom, sexpr, nil, identifier, quote;
 
     //    qi::rule<Iterator, int(), ascii::space_type> 
     //    identifier;
@@ -450,8 +457,7 @@ namespace lisp
     {
       symbol sym = boost::get<symbol>(p->car);
       function f = ctx->fns[sym];
-      cons_ptr args = boost::get<cons_ptr>(p->cdr);
-      return f(ctx, args);
+      return f(ctx, p->cdr);
     }
   };
   
@@ -463,8 +469,10 @@ namespace lisp
 
     op(double i) : initial(i) { }
 
-    variant operator()(context_ptr c, cons_ptr l)
+    variant operator()(context_ptr c, variant v)
     {
+      cons_ptr l = boost::get<cons_ptr>(v);
+
       double r = initial;
       eval e(c);
       while(l)
@@ -482,7 +490,7 @@ namespace lisp
   {
     struct quote
     {
-      variant operator()(context_ptr c, cons_ptr l)
+      variant operator()(context_ptr c, variant l)
       {
 	return l; // no-op.  the 'quote' has been removed from the list already.
       }
@@ -490,8 +498,10 @@ namespace lisp
 
     struct divides
     {
-      variant operator()(context_ptr c, cons_ptr l)
+      variant operator()(context_ptr c, variant v)
       {
+	cons_ptr l = boost::get<cons_ptr>(v);
+
 	eval e(c);
 	variant evalled = boost::apply_visitor(e, l->car);
 	double r = boost::get<double>(evalled);
@@ -578,7 +588,7 @@ main(int argc, char** argv)
 	    variant out = e(result);
 	    if (debug)
 	      {
-		std::cout << "\evalled to> ";
+		std::cout << "\nevalled to> ";
 		dbg(out);
 		std::cout << "\n";
 	      }
