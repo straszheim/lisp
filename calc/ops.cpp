@@ -20,6 +20,7 @@ namespace lisp {
 
       double r = initial;
 
+      l = boost::get<cons_ptr>(v);
       while(l)
 	{
 	  double n = boost::get<double>(l->car);
@@ -61,9 +62,14 @@ namespace lisp {
       return v;
     }
 
-    variant defvar::operator()(context_ptr c, variant v)
+    variant defvar::operator()(context_ptr ctx, variant v)
     {
-      return v;
+      cons_ptr c = boost::get<cons_ptr>(v);
+      symbol s = boost::get<symbol>(c->car);
+      cons_ptr next = boost::get<cons_ptr>(c->cdr);
+      variant result = eval(ctx, next->car);
+      global->table[s] = result;
+      return s;
     }
 
     variant divides::operator()(context_ptr c, variant v)
@@ -81,6 +87,7 @@ namespace lisp {
       if (! l)
 	return 1.0 / r;
 
+      l = boost::get<cons_ptr>(v);
       while(l)
 	{
 	  double n = boost::get<double>(l->car);

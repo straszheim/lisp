@@ -36,8 +36,11 @@ namespace lisp
     
   variant eval_visitor::operator()(const symbol& s)
   {
-    SHOW;
-    return s;
+    std::map<std::string, variant>::iterator i = global->table.find(s);
+    if (i != global->table.end())
+      return i->second;
+    else
+      throw std::runtime_error("unbound variable");
   }
     
   //
@@ -51,9 +54,8 @@ namespace lisp
 
   variant eval_visitor::operator()(const cons_ptr& p)
   {
+    SHOW;
     symbol sym = boost::get<symbol>(p->car);
-    if (sym == "quote")
-      return p->cdr;
     function f = ctx->fns[sym];
 
     return f(ctx, p->cdr);

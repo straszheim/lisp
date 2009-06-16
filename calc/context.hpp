@@ -22,7 +22,7 @@ namespace lisp {
     context_ptr scope();
   };
 
-
+  extern context_ptr global;
 }
 
 #endif

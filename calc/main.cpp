@@ -338,12 +338,7 @@ namespace lisp
     qi::rule<Iterator, variant(), ascii::space_type> 
     atom, sexpr, nil, identifier, quote, cons;
 
-    //    qi::rule<Iterator, int(), ascii::space_type> 
-    //    identifier;
-
   };
-
-  context_ptr global;
 
 }
 
@@ -366,8 +361,6 @@ main(int argc, char** argv)
 	debug = true;
     }
 
-  global = context_ptr(new context);
-
   global->fns["+"] = lisp::function(lisp::ops::op<std::plus<double> >(0));
   global->fns["-"] = lisp::function(lisp::ops::op<std::minus<double> >(0));
   global->fns["*"] = lisp::function(lisp::ops::op<std::multiplies<double> >(1));
@@ -375,6 +368,7 @@ main(int argc, char** argv)
   global->fns["quote"] = lisp::function(lisp::ops::quote());
   global->fns["cons"] = lisp::function(lisp::ops::cons());
   global->fns["list"] = lisp::function(lisp::ops::list());
+  global->fns["defvar"] = lisp::function(lisp::ops::defvar());
 
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;

@@ -10,5 +10,6 @@ namespace lisp
     return ctx;
   }
 
+  context_ptr global(new context);
 }
 
