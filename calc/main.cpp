@@ -14,83 +14,17 @@
 #include <string>
 #include <map>
 
+#include "types.hpp"
+#include "ops.hpp"
+#include "context.hpp"
+#include "eval.hpp"
+
 namespace lisp
 {
   namespace qi = boost::spirit::qi;
   namespace phoenix = boost::phoenix;
   namespace ascii = boost::spirit::ascii;
 
-  struct symbol : std::string
-  {
-    symbol(const std::string& s) : std::string(s) { }
-  };
-
-  struct cons;
-  typedef boost::intrusive_ptr<cons> cons_ptr;
-
-  struct context;
-  typedef boost::shared_ptr<context> context_ptr;
-
-  struct function;
-
-  typedef boost::variant<double,
-			 std::string,
-			 symbol,
-			 boost::recursive_wrapper<function>,
-			 cons_ptr>
-  variant;
-
-  struct function 
-  { 
-    typedef variant result_type;
-    typedef boost::function<variant(context_ptr, variant)> bf_t;
-    bf_t f;
-
-    std::string name;
-
-    function() { }
-    function(bf_t _f) : f(_f) { }
-
-    variant operator()(context_ptr& ctx, variant& cns)
-    {
-      return f(ctx, cns);
-    }
-  };
-
-  struct cons 
-  {
-    unsigned count;
-
-    variant car, cdr;
-    
-    cons() : count(0),
-	     car(cons_ptr(0)),
-	     cdr(cons_ptr(0))
-    { }
-
-    template <typename T>
-    cons(T t) : count(0),
-		car(t),
-		cdr(cons_ptr(0))
-    { }
-
-    ~cons() { }
-    
-  };
-
-  void intrusive_ptr_add_ref(cons* c)
-  {
-    //    std::cout << "inc cons @ " << c << "\n";
-    c->count++;
-  }
-  
-  void intrusive_ptr_release(cons* c)
-  {
-    //    std::cout << "dec cons @ " << c << "\n";
-    c->count--;
-    if (c->count == 0)
-      delete c;
-  }
   
   const static variant nil(cons_ptr(0));
 
@@ -387,159 +321,8 @@ namespace lisp
 
   };
 
-  struct context : boost::enable_shared_from_this<context>
-  {
-    std::map<std::string, variant> table;
-    std::map<std::string, function> fns;
-
-    context_ptr next;
-
-    context_ptr scope()
-    {
-      context_ptr ctx(new context);
-      ctx->next = shared_from_this();
-    }
-
-  };
-
   context_ptr global;
 
-  //#define SHOW std::cout << __PRETTY_FUNCTION__ << "\n"
-#define SHOW
-
-  struct eval
-  {
-    typedef variant result_type;
-
-    context_ptr ctx;
-    eval(context_ptr _ctx) : ctx(_ctx) { }
-
-    variant operator()(double d)
-    {
-      SHOW;
-      return d;
-    }
-    
-    variant operator()(variant v)
-    {
-      SHOW;
-      eval eprime(ctx);
-      return boost::apply_visitor(eprime, v);
-    }
-    
-    variant operator()(const std::string& s)
-    {
-      SHOW;
-      return s;
-    }
-    
-    variant operator()(const symbol& s)
-    {
-      SHOW;
-      return s;
-    }
-    
-    variant operator()(const function& p)
-    {
-      SHOW;
-      /*
-      if (!p) 
-	return;
-      if (boost::get<cons_ptr>(&p->car))
-	{
-	  os << "(";
-	}
-      boost::apply_visitor(*this, p->car);
-      if (boost::get<cons_ptr>(&p->car))
-	os << ")";
-      if (!cons::nil(p->cdr))
-	os << " ";
-      boost::apply_visitor(*this, p->cdr);
-      */
-      return 1313;
-    }
-
-    variant operator()(const cons_ptr& p)
-    {
-      symbol sym = boost::get<symbol>(p->car);
-      function f = ctx->fns[sym];
-      return f(ctx, p->cdr);
-    }
-  };
-  
-  template <typename Op>
-  struct op
-  {
-    const double initial;
-    Op op_;
-
-    op(double i) : initial(i) { }
-
-    variant operator()(context_ptr c, variant v)
-    {
-      cons_ptr l = boost::get<cons_ptr>(v);
-
-      double r = initial;
-      eval e(c);
-      while(l)
-	{
-	  variant evalled = boost::apply_visitor(e, l->car);
-	  double n = boost::get<double>(evalled);
-	  r = op_(r, n);
-	  l = boost::get<cons_ptr>(l->cdr);
-	}
-      return r;
-    }
-  };
-
-  namespace ops 
-  {
-    struct quote
-    {
-      variant operator()(context_ptr c, variant l)
-      {
-	return l; // no-op.  the 'quote' has been removed from the list already.
-      }
-    };
-
-    struct cons
-    {
-      variant operator()(context_ptr c, variant v)
-      {
-	cons_ptr a1 = boost::get<cons_ptr>(v);
-	cons_ptr a2 = boost::get<cons_ptr>(a1->cdr);
-	cons_ptr nc = new lisp::cons;
-	nc->car = a1->car;
-	nc->cdr = a2->car;
-	return nc;
-      }
-    };
-
-    struct divides
-    {
-      variant operator()(context_ptr c, variant v)
-      {
-	cons_ptr l = boost::get<cons_ptr>(v);
-
-	eval e(c);
-	variant evalled = boost::apply_visitor(e, l->car);
-	double r = boost::get<double>(evalled);
-	l = boost::get<cons_ptr>(l->cdr);
-
-	if (! l)
-	  return 1.0 / r;
-
-	while(l)
-	  {
-	    variant evalled = boost::apply_visitor(e, l->car);
-	    double n = boost::get<double>(evalled);
-	    r /= n;
-	    l = boost::get<cons_ptr>(l->cdr);
-	  }
-	return r;
-      }
-    };
-  }
 }
 
 using namespace lisp;
@@ -563,9 +346,9 @@ main(int argc, char** argv)
 
   global = context_ptr(new context);
 
-  global->fns["+"] = lisp::function(lisp::op<std::plus<double> >(0));
-  global->fns["-"] = lisp::function(lisp::op<std::minus<double> >(0));
-  global->fns["*"] = lisp::function(lisp::op<std::multiplies<double> >(1));
+  global->fns["+"] = lisp::function(lisp::ops::op<std::plus<double> >(0));
+  global->fns["-"] = lisp::function(lisp::ops::op<std::minus<double> >(0));
+  global->fns["*"] = lisp::function(lisp::ops::op<std::multiplies<double> >(1));
   global->fns["/"] = lisp::function(lisp::ops::divides());
   global->fns["quote"] = lisp::function(lisp::ops::quote());
   global->fns["cons"] = lisp::function(lisp::ops::cons());
