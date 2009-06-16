@@ -76,6 +76,7 @@ namespace lisp
 	}
       return head;
     }
+
     // currently only used for quote
     variant operator()(char c, const variant& v) const
     {
@@ -88,6 +89,20 @@ namespace lisp
       head->cdr = v;
 
       return head;
+    }
+
+    // cons
+    variant operator()(const variant& l, const variant& r) const
+    {
+      //      if (c != '\'')
+      //	throw std::runtime_error("we shouldn't ever see this");
+      std::cout << __PRETTY_FUNCTION__ << "\n";
+      cons_ptr c = new cons;
+      
+      c->car = l;
+      c->cdr = r;
+
+      return c;
     }
   };
 
@@ -278,11 +293,16 @@ namespace lisp
 	| nil                       [ _val = val(::lisp::nil) ]
 	| (char_("'") >> sexpr)     [ _val = p(_1, _2) ]
 	| quote                     [ _val = _1 ]
+	| cons                      [ _val = _1 ]
 	| (char_("(") >> (+sexpr)   [ _val = p(_1) ] >> char_(")"))
 	;
       
       quote = 
-          (char_("(") >> "quote" >> sexpr >> char_(")"))   [ _val = p(_1, _2) ]
+	(char_("(") >> "quote" >> sexpr >> char_(")"))   [ _val = p(_1, _2) ]
+	;
+
+      cons = 
+	(char_("(") >> sexpr >> char_(".") >> sexpr >> char_(")"))   [ _val = p(_2, _4) ]
 	;
 
       on_error<fail>
@@ -304,17 +324,19 @@ namespace lisp
 	  sexpr.name("sexpr");
 	  identifier.name("identifier");
 	  quote.name("quote");
+	  cons.name("cons");
 
 	  debug(nil);
 	  debug(atom);
 	  debug(sexpr);
 	  debug(identifier);
 	  debug(quote);
+	  debug(cons);
 	}
     }
     
     qi::rule<Iterator, variant(), ascii::space_type> 
-    atom, sexpr, nil, identifier, quote;
+    atom, sexpr, nil, identifier, quote, cons;
 
     //    qi::rule<Iterator, int(), ascii::space_type> 
     //    identifier;
@@ -352,6 +374,7 @@ main(int argc, char** argv)
   global->fns["/"] = lisp::function(lisp::ops::divides());
   global->fns["quote"] = lisp::function(lisp::ops::quote());
   global->fns["cons"] = lisp::function(lisp::ops::cons());
+  global->fns["list"] = lisp::function(lisp::ops::list());
 
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;

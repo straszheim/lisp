@@ -46,6 +46,19 @@ namespace lisp {
       return nc;
     }
 
+    variant list::operator()(context_ptr c, variant v)
+    {
+      /*
+      cons_ptr a1 = boost::get<cons_ptr>(v);
+      cons_ptr a2 = boost::get<cons_ptr>(a1->cdr);
+      cons_ptr nc = new lisp::cons;
+      nc->car = a1->car;
+      nc->cdr = a2->car;
+      return nc;
+      */
+      assert(0);
+    }
+
     variant divides::operator()(context_ptr c, variant v)
     {
       cons_ptr l = boost::get<cons_ptr>(v);
