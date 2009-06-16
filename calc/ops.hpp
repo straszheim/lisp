@@ -11,6 +11,7 @@ namespace lisp {
     OP_FWD_DECL(defvar);
     OP_FWD_DECL(quote);
     OP_FWD_DECL(print);
+    OP_FWD_DECL(evaluate);
 
     template <typename Op>
     struct op 

@@ -6,7 +6,8 @@
 #include "eval.hpp"
 #include "print.hpp"
 
-#define SHOW std::cerr << __PRETTY_FUNCTION__ << "\n"
+// #define SHOW std::cerr << __PRETTY_FUNCTION__ << "\n"
+#define SHOW 
 
 namespace lisp {
   namespace ops {
@@ -90,6 +91,16 @@ namespace lisp {
       return evalled;
     }
 
+    variant evaluate::operator()(context_ptr ctx, variant v)
+    {
+      SHOW;
+      cons_ptr arg = boost::get<cons_ptr>(v);
+      variant evalled = eval(ctx, arg->car);
+      // now we've got what to evaulate, ie fetch fncall from variable
+      evalled = eval(ctx, evalled);
+      return evalled;
+    }
+
     variant divides::operator()(context_ptr c, variant v)
     {
       SHOW;
@@ -116,5 +127,11 @@ namespace lisp {
       return r;
     }
 
+    /*
+    variant defun::operator()(context_ptr c, variant v)
+    {
+      
+    }
+    */
   }
 }

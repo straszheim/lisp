@@ -93,13 +93,6 @@ namespace lisp
     }
   };
 
-  struct parens
-  {
-    std::ostream& os;
-    parens(std::ostream& _os) : os(_os) { os << "("; }
-    ~parens() { os << ")"; }
-  };
-
   template <typename Iterator>
   struct interpreter 
     : qi::grammar<Iterator, variant(), ascii::space_type>
@@ -217,6 +210,7 @@ main(int argc, char** argv)
   global->fns["list"] = lisp::function(lisp::ops::list());
   global->fns["defvar"] = lisp::function(lisp::ops::defvar());
   global->fns["print"] = lisp::function(lisp::ops::print());
+  global->fns["eval"] = lisp::function(lisp::ops::evaluate());
 
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;
