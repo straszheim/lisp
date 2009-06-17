@@ -17,9 +17,14 @@ namespace lisp {
     std::map<std::string, variant> table;
     std::map<std::string, function> fns;
 
+    function get_function(const std::string&);
+    variant get_variable(const std::string& s);
+
     context_ptr next;
 
     context_ptr scope();
+
+    void dump(std::ostream&) const;
   };
 
   extern context_ptr global;

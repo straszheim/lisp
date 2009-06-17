@@ -39,9 +39,7 @@ namespace lisp {
     function(bf_t _f) : f(_f) { }
 
     variant operator()(context_ptr& ctx, variant& cns);
-    //    {
-    //      return f(ctx, cns);
-    //    }
+    bool operator!() const { return !f; }
   };
 
   struct cons 

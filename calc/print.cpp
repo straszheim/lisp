@@ -7,8 +7,8 @@
 
 namespace lisp {
 
-  cons_print::cons_print(std::ostream& _os) 
-    : os(_os) 
+  cons_print::cons_print(std::ostream& _os)
+    : os(_os)
   { }
 
   void cons_print::operator()(double d) const
@@ -43,7 +43,6 @@ namespace lisp {
     boost::apply_visitor(*this, p->car);
     if (branch)
       os << ")";
-    bool recur = false;
     if (is_ptr(p->cdr) && !is_nil(p->cdr))
       {
 	os << " ";
@@ -77,4 +76,5 @@ namespace lisp {
     if (branch)
       os << ")";
   }
+
 }

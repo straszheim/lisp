@@ -1,13 +1,15 @@
-#include <iostream>
-
 #include "types.hpp"
 #include "ops.hpp"
 #include "context.hpp"
 #include "eval.hpp"
 #include "print.hpp"
+#include "dot.hpp"
 
-// #define SHOW std::cerr << __PRETTY_FUNCTION__ << "\n"
-#define SHOW 
+#include <iostream>
+#include <vector>
+
+#define SHOW std::cerr << __PRETTY_FUNCTION__ << "\n"
+// #define SHOW 
 
 namespace lisp {
   namespace ops {
@@ -88,6 +90,7 @@ namespace lisp {
       variant evalled = eval(ctx, arg->car);
       cons_print cp(std::cout);
       cp(evalled);
+      std::cout << "\n";
       return evalled;
     }
 
@@ -101,9 +104,23 @@ namespace lisp {
       return evalled;
     }
 
+    variant progn::operator()(context_ptr ctx, variant v)
+    {
+      cons_ptr l = boost::get<cons_ptr>(v);
+      variant last;
+      while (l)
+	{
+	  last = eval(ctx, l->car);
+	  l = boost::get<cons_ptr>(l->cdr);
+	}
+      return last;
+    }
+
     variant divides::operator()(context_ptr c, variant v)
     {
       SHOW;
+
+      // the 
       cons_ptr l = boost::get<cons_ptr>(v);
       while(l)
 	{
@@ -127,11 +144,66 @@ namespace lisp {
       return r;
     }
 
-    /*
+    template <typename Signature>
+    struct dispatch
+    {
+      variant code;
+      std::vector<symbol> args;
+
+      dispatch(variant _code) : code(_code) 
+      { 
+	dout("codeis", code);
+      }
+
+      variant operator()(context_ptr c, variant v)
+      {
+	cons_ptr l = boost::get<cons_ptr>(v);
+	std::cout << "old scope:";
+	c->dump(std::cout);
+	context_ptr scope = c->scope();
+	std::cout << "new scope:";
+	scope->dump(std::cout);
+	std::cout << "adding " << args.size() << " args\n";
+	for(unsigned u = 0; u<args.size(); u++)
+	  {
+	    variant evalled = eval(c, l->car);
+	    std::cout << args[u] << "\n";
+	    scope->table[args[u]] = evalled;
+	    l = boost::get<cons_ptr>(l->cdr);
+	  }
+	scope->dump(std::cout);
+	
+	cons_ptr progn(new lisp::cons);
+	progn->car = symbol("progn");
+	progn->cdr = code;
+	variant v2(progn);
+	dot d("readytoeval", 0);
+	d(v2);
+	return eval(scope, v2);
+      }
+    };
+
     variant defun::operator()(context_ptr c, variant v)
     {
-      
+      SHOW;
+      c->dump(std::cout);
+      cons_ptr top = boost::get<cons_ptr>(v);
+      symbol s = boost::get<symbol>(top->car);
+      cons_ptr arglist = boost::get<cons_ptr>(top->cdr);
+      cons_ptr l = boost::get<cons_ptr>(arglist->car);
+      std::vector<symbol> args;
+      while (l)
+	{
+	  symbol s = boost::get<symbol>(l->car);
+	  args.push_back(s);
+	  std::cout << "ARG: " << s << "\n";
+	  l = boost::get<cons_ptr>(l->cdr);
+	}
+      dispatch<void> dispatcher(arglist->cdr);
+      dispatcher.args = args;
+      c->fns[s] = function(dispatcher);
+
+      return s;
     }
-    */
   }
 }

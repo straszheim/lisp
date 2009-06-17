@@ -1,7 +1,10 @@
 #ifndef LISP_OPS_HPP_INCLUDED
 #define LISP_OPS_HPP_INCLUDED
 
-#define OP_FWD_DECL(T) struct T { variant operator()(context_ptr, variant); }; 
+#define OP_FWD_DECL(T)					\
+  struct T {						\
+      variant operator()(context_ptr, variant);		\
+  }; 
 
 namespace lisp {
   namespace ops {
@@ -12,6 +15,8 @@ namespace lisp {
     OP_FWD_DECL(quote);
     OP_FWD_DECL(print);
     OP_FWD_DECL(evaluate);
+    OP_FWD_DECL(progn);
+    OP_FWD_DECL(defun);
 
     template <typename Op>
     struct op 

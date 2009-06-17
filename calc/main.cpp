@@ -9,8 +9,10 @@
 #include <boost/spirit/include/phoenix_statement.hpp>
 #include <boost/spirit/home/phoenix/core/value.hpp>
 #include <boost/function.hpp>
+#include <boost/format.hpp>
 
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <map>
 
@@ -20,6 +22,7 @@
 #include "eval.hpp"
 #include "debug.hpp"
 #include "print.hpp"
+#include "dot.hpp"
 
 namespace lisp
 {
@@ -184,23 +187,8 @@ namespace lisp
 
 using namespace lisp;
 
-///////////////////////////////////////////////////////////////////////////////
-//  Main program
-///////////////////////////////////////////////////////////////////////////////
-int
-main(int argc, char** argv)
+int repl(bool debug, std::istream& is)
 {
-  std::cout << "A lisp interpreting plaything\n(c) 2009 Troy D. Straszheim\n";
-  
-  std::vector<std::string> args(argv, argv+argc);
-  bool debug = false;
-
-  if (argc > 1)
-    {
-      if (args[1] == "-d")
-	debug = true;
-    }
-
   global->fns["+"] = lisp::function(lisp::ops::op<std::plus<double> >(0));
   global->fns["-"] = lisp::function(lisp::ops::op<std::minus<double> >(0));
   global->fns["*"] = lisp::function(lisp::ops::op<std::multiplies<double> >(1));
@@ -211,6 +199,8 @@ main(int argc, char** argv)
   global->fns["defvar"] = lisp::function(lisp::ops::defvar());
   global->fns["print"] = lisp::function(lisp::ops::print());
   global->fns["eval"] = lisp::function(lisp::ops::evaluate());
+  global->fns["defun"] = lisp::function(lisp::ops::defun());
+  global->fns["progn"] = lisp::function(lisp::ops::progn());
 
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;
@@ -222,8 +212,11 @@ main(int argc, char** argv)
   
   std::cout << "----------------------------\n> ";
 
-  while (std::getline(std::cin, str))
+  unsigned i = 0;
+
+  while (std::getline(is, str))
     {
+      i++;
       std::string::const_iterator iter = str.begin();
       std::string::const_iterator end = str.end();
       lisp::variant result;
@@ -240,6 +233,9 @@ main(int argc, char** argv)
 	    {
 	      std::cout << "\nparsed as> ";
 	      dbg(result);
+	      lisp::dot d("parsed", i);
+	      d(result);
+
 	      std::cout << "\nparsed as> ";
 	      repr(result);
 	      std::cout << "\n";
@@ -252,6 +248,8 @@ main(int argc, char** argv)
 		std::cout << "\nevalled to> ";
 		dbg(out);
 		std::cout << "\n";
+		lisp::dot d("result", i);
+		d(out);
 	      }
 	    repr(out);
 	    std::cout << "\n";
@@ -269,4 +267,29 @@ main(int argc, char** argv)
   return 0;
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+//  Main program
+///////////////////////////////////////////////////////////////////////////////
+int
+main(int argc, char** argv)
+{
+  std::cout << "A lisp interpreting plaything\n(c) 2009 Troy D. Straszheim\n";
+  
+  std::list<std::string> args(argv+1, argv+argc);
+
+  bool debug;
+  if(args.front() == "-d")
+    {
+      debug = true;
+      args.pop_front();
+    }
+  if (args.size() == 1)
+    {
+      std::ifstream is(args.front().c_str());
+      repl(debug, is);
+    }
+  else
+    repl(debug, std::cin);
+}
 

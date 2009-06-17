@@ -1,8 +1,10 @@
 #include "types.hpp"
 #include "eval.hpp"
 
-//#define SHOW std::cout << __PRETTY_FUNCTION__ << "\n"
-#define SHOW
+#include <iostream>
+
+#define SHOW std::cout << __PRETTY_FUNCTION__ << "\n"
+// #define SHOW
 
 namespace lisp 
 {
@@ -12,7 +14,6 @@ namespace lisp
     return boost::apply_visitor(e, v);
   }
   
-
   eval_visitor::eval_visitor(context_ptr _ctx) : ctx(_ctx) { }
 
   variant eval_visitor::operator()(double d)
@@ -36,11 +37,7 @@ namespace lisp
     
   variant eval_visitor::operator()(const symbol& s)
   {
-    std::map<std::string, variant>::iterator i = global->table.find(s);
-    if (i != global->table.end())
-      return i->second;
-    else
-      throw std::runtime_error("unbound variable");
+    return ctx->get_variable(s);
   }
     
   //
@@ -55,8 +52,9 @@ namespace lisp
   variant eval_visitor::operator()(const cons_ptr& p)
   {
     SHOW;
+    ctx->dump(std::cout);
     symbol sym = boost::get<symbol>(p->car);
-    function f = ctx->fns[sym];
+    function f = ctx->get_function(sym);
 
     return f(ctx, p->cdr);
   }

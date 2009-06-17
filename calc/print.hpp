@@ -8,7 +8,6 @@ namespace lisp {
   struct cons_print
   {
     typedef void result_type;
-    
     std::ostream& os;
 
     cons_print(std::ostream& _os);
