@@ -9,4 +9,5 @@ namespace lisp
   }
 
   const variant nil(cons_ptr(0));
+  const variant t(symbol("t"));
 }

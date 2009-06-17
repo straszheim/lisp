@@ -7,4 +7,12 @@ add_executable(lisp
   debug.cpp print.cpp dot.cpp
   )
 target_link_libraries(lisp stdc++)
+
+
+add_executable(ftypes 
+  interpreter_example.cpp)
+
+add_executable(fplay
+  fplay.cpp)
+
 # add_executable(tst calc4.cpp)

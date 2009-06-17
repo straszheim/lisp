@@ -58,7 +58,10 @@ namespace lisp {
     variant quote::operator()(context_ptr c, variant v)
     {
       SHOW;
-      return v;
+      cons_ptr l = boost::get<cons_ptr>(v);
+      if (! is_nil(l->cdr))
+	throw std::runtime_error("wrong number of args to quote");
+      return l->car;
     }
 
     variant list::operator()(context_ptr c, variant v)

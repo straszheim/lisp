@@ -70,14 +70,15 @@ namespace lisp
     // currently only used for quote
     variant operator()(char c, const variant& v) const
     {
-      //      if (c != '\'')
-      //	throw std::runtime_error("we shouldn't ever see this");
+      // if (c != '\'')
+      //   throw std::runtime_error("we shouldn't ever see this");
       std::cout << __PRETTY_FUNCTION__ << "\n";
       cons_ptr head = new cons;
+      cons_ptr tail = new cons;
+      tail->car = v;
       
       head->car = symbol("quote");
-      head->cdr = v;
-
+      head->cdr = tail;
       return head;
     }
 
@@ -201,6 +202,8 @@ int repl(bool debug, std::istream& is)
   global->fns["eval"] = lisp::function(lisp::ops::evaluate());
   global->fns["defun"] = lisp::function(lisp::ops::defun());
   global->fns["progn"] = lisp::function(lisp::ops::progn());
+
+  global->table["t"] = t;
 
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;

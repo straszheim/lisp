@@ -89,7 +89,7 @@ namespace lisp {
   }
   
   extern const variant nil;
-
+  extern const variant t;
 }
 
 #endif
