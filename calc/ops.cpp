@@ -4,6 +4,7 @@
 #include "eval.hpp"
 #include "print.hpp"
 #include "dot.hpp"
+#include "debug.hpp"
 
 #include <iostream>
 #include <vector>
@@ -18,20 +19,15 @@ namespace lisp {
     variant op<Op>::operator()(context_ptr c, variant v)
     {
       SHOW;
-      cons_ptr l = boost::get<cons_ptr>(v);
-      while(l)
-	{
-	  l->car = eval(c, l->car);
-	  l = boost::get<cons_ptr>(l->cdr);
-	}
-
       double r = initial;
 
-      l = boost::get<cons_ptr>(v);
+      cons_ptr l = boost::get<cons_ptr>(v);
+      std::vector<double> vd;
       while(l)
 	{
-	  double n = boost::get<double>(l->car);
-	  r = op_(r, n);
+	  variant result = eval(c, l->car);
+	  double d = boost::get<double>(result);
+	  r = op_(r, d);
 	  l = boost::get<cons_ptr>(l->cdr);
 	}
       return r;
@@ -158,31 +154,36 @@ namespace lisp {
 	dout("codeis", code);
       }
 
-      variant operator()(context_ptr c, variant v)
+      variant operator()(context_ptr c, const variant v)
       {
 	cons_ptr l = boost::get<cons_ptr>(v);
-	std::cout << "old scope:";
-	c->dump(std::cout);
+	//	std::cout << "old scope:";
+	//	c->dump(std::cout);
 	context_ptr scope = c->scope();
-	std::cout << "new scope:";
-	scope->dump(std::cout);
-	std::cout << "adding " << args.size() << " args\n";
+	//	std::cout << "new scope:";
+	//	scope->dump(std::cout);
+	//	std::cout << "adding " << args.size() << " args\n";
 	for(unsigned u = 0; u<args.size(); u++)
 	  {
 	    variant evalled = eval(c, l->car);
-	    std::cout << args[u] << "\n";
+	    //	    std::cout << args[u] << "\n";
 	    scope->put(args[u], evalled);
 	    l = boost::get<cons_ptr>(l->cdr);
 	  }
-	scope->dump(std::cout);
+	//	scope->dump(std::cout);
 	
 	cons_ptr progn(new lisp::cons);
 	progn->car = symbol("progn");
 	progn->cdr = code;
 	variant v2(progn);
-	dot d("readytoeval", 0);
-	d(v2);
-	return eval(scope, v2);
+	dout("readytorun", v2);
+	std::cout << "READY TO RUN:";
+	debug(v2);
+	variant result = eval(scope, v2);
+	std::cout << "\nNOW IT IS:";
+	dout("afterrun", v2);
+	debug(v2);
+	return result;
       }
     };
 

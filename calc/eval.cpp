@@ -8,7 +8,7 @@
 
 namespace lisp 
 {
-  variant eval(context_ptr& ctx, variant& v)
+  variant eval(context_ptr& ctx, const variant& v)
   {
     eval_visitor e(ctx);
     return boost::apply_visitor(e, v);
@@ -16,17 +16,17 @@ namespace lisp
   
   eval_visitor::eval_visitor(context_ptr _ctx) : ctx(_ctx) { }
 
-  variant eval_visitor::operator()(double d)
-  {
-    SHOW;
-    return d;
-  }
-    
-  variant eval_visitor::operator()(variant v)
+  variant eval_visitor::operator()(const variant& v)
   {
     SHOW;
     eval_visitor eprime(ctx);
     return boost::apply_visitor(eprime, v);
+  }
+    
+  variant eval_visitor::operator()(double d)
+  {
+    SHOW;
+    return d;
   }
     
   variant eval_visitor::operator()(const std::string& s)
@@ -45,14 +45,14 @@ namespace lisp
   //
   variant eval_visitor::operator()(const function& p)
   {
-    SHOW;
+    assert(0);
     return 1313;
   }
 
   variant eval_visitor::operator()(const cons_ptr& p)
   {
     SHOW;
-    ctx->dump(std::cout);
+    //    ctx->dump(std::cout);
     symbol sym = boost::get<symbol>(p->car);
     function f = ctx->get<function>(sym);
 

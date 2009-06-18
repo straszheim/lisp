@@ -14,12 +14,12 @@ namespace lisp {
     
   void cons_debug::operator()(const std::string& s) const
   {
-    os << "\"" << s << "\"";
+    os << "(string:\"" << s << "\")";
   }
     
   void cons_debug::operator()(const symbol& s) const
   {
-    os << "symbol:" << s;
+    os << "(symbol:" << s << ")";
   }
     
   void cons_debug::operator()(const cons_ptr p) const
@@ -40,7 +40,7 @@ namespace lisp {
 
   void cons_debug::operator()(const function f) const
   {
-    os << "function@" << &f << " \"" << f.name << "\"\n";
+    os << "(function@" << &f << " \"" << f.name << "\")\n";
   }
 
   void cons_debug::operator()(const variant v) const
@@ -64,5 +64,12 @@ namespace lisp {
     printer(v);
     return os;
   }
+
+  void debug(const variant& v, std::ostream& os)
+  {
+    cons_debug dbg(os);
+    dbg(v);
+  }
+
 
 }

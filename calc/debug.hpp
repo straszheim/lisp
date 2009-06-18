@@ -1,6 +1,8 @@
 #ifndef LISP_DEBUG_HPP_INCLUDED
 #define LISP_DEBUG_HPP_INCLUDED
 
+#include <iostream>
+
 namespace lisp {
 
   struct cons_debug
@@ -21,6 +23,9 @@ namespace lisp {
   
   std::ostream& operator<<(std::ostream& os, const cons_ptr& cp);
   std::ostream& operator<<(std::ostream& os, const variant& v);
+
+  void debug(const variant& v, std::ostream& os = std::cout);
+
 }
 
 #endif

@@ -15,7 +15,7 @@ namespace lisp
 
     variant operator()(double d);
     
-    variant operator()(variant v);
+    variant operator()(const variant& v);
     
     variant operator()(const std::string& s);
     
@@ -26,7 +26,7 @@ namespace lisp
     variant operator()(const cons_ptr& p);
   };
 
-  variant eval(context_ptr& ctx, variant& v);
+  variant eval(context_ptr& ctx, const variant& v);
 
 }
 

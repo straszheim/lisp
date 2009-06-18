@@ -10,13 +10,13 @@ namespace lisp
   {
     context* newctx = new context;
     context_ptr newscope(newctx);
-    std::cout << "current ";
-    dump(std::cout);
+    //    std::cout << "current ";
+    //    dump(std::cout);
     context_ptr this_ptr = shared_from_this();
     assert(this_ptr.get() == this);
     newscope->next_ = this_ptr;
-    std::cout << "new ";
-    newscope->dump(std::cout);
+    //    std::cout << "new ";
+    //    newscope->dump(std::cout);
     return newscope;
   }
 
@@ -36,9 +36,9 @@ namespace lisp
   template <typename T>
   T& context::get(const std::string& s)
   {
-    std::cout << "looking for " << s << "\n";
+    //    std::cout << "looking for " << s << "\n";
     context_ptr ctx = shared_from_this();
-    ctx->dump(std::cerr);
+    //    ctx->dump(std::cerr);
     while (ctx)
       {
 	std::map<std::string, variant>::iterator iter = ctx->m_.find(s);
