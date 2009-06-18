@@ -48,6 +48,23 @@ namespace lisp
       return symbol(std::string(r.begin(), r.end()));
     }
 
+    template <typename T>
+    variant operator()(const T& s) const
+    {
+      std::cout << __PRETTY_FUNCTION__ << "\n";
+      return std::string("YEAH");
+    }
+
+    variant operator()(const std::vector<char>& v) const
+    {
+      return std::string(v.begin(), v.end());
+    }
+
+    variant operator()(boost::iterator_range<std::string::const_iterator> r, double) const
+    {
+      return std::string(r.begin(), r.end());
+    }
+
     variant operator()(const std::vector<variant>& v) const
     {
       cons_ptr head = new cons;
@@ -102,6 +119,7 @@ namespace lisp
     : qi::grammar<Iterator, variant(), ascii::space_type>
   {
     boost::phoenix::function<lisp::process> p;
+
     bool show_debug;
     interpreter(bool _show_debug) : interpreter::base_type(sexpr), show_debug(_show_debug)
     {
@@ -116,6 +134,7 @@ namespace lisp
       using qi::on_error;
       using qi::fail;
       using qi::debug;
+      using boost::phoenix::construct;
       using boost::spirit::lexeme;
       using boost::spirit::raw;
       
@@ -124,9 +143,13 @@ namespace lisp
       identifier = 
 	  raw[lexeme[+(alnum | '+' | '-' | '*' | '/')]][_val = p(_1)];
 
-      atom =
-          double_      [ _val = p(_1) ]
-	| identifier   [ _val = _1    ]
+      quoted_string = 
+	lexeme['"' >> +(char_ - '"') >> '"'][_val = p(_1)];
+
+      atom %=
+          double_     
+	| identifier  
+	| quoted_string
       	;
       
       nil = 
@@ -169,6 +192,8 @@ namespace lisp
 	  identifier.name("identifier");
 	  quote.name("quote");
 	  cons.name("cons");
+	  quoted_string.name("quoted_string");
+
 
 	  debug(nil);
 	  debug(atom);
@@ -176,11 +201,14 @@ namespace lisp
 	  debug(identifier);
 	  debug(quote);
 	  debug(cons);
+	  debug(quoted_string);
 	}
     }
     
     qi::rule<Iterator, variant(), ascii::space_type> 
-    atom, sexpr, nil, identifier, quote, cons;
+    atom, sexpr, nil, identifier, quote, cons, quoted_string;
+    //    qi::rule<Iterator, std::string(), qi::locals<std::string>, ascii::space_type> 
+    //    quoted_string;
 
   };
 
@@ -204,6 +232,7 @@ int repl(bool debug, std::istream& is)
   global->fns["progn"] = lisp::function(lisp::ops::progn());
 
   global->table["t"] = t;
+  global->table["nil"] = nil;
 
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;
