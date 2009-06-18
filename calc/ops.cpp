@@ -82,7 +82,7 @@ namespace lisp {
       symbol s = boost::get<symbol>(c->car);
       cons_ptr next = boost::get<cons_ptr>(c->cdr);
       variant result = eval(ctx, next->car);
-      global->table[s] = result;
+      global->put(s, result);
       return s;
     }
 
@@ -171,7 +171,7 @@ namespace lisp {
 	  {
 	    variant evalled = eval(c, l->car);
 	    std::cout << args[u] << "\n";
-	    scope->table[args[u]] = evalled;
+	    scope->put(args[u], evalled);
 	    l = boost::get<cons_ptr>(l->cdr);
 	  }
 	scope->dump(std::cout);
@@ -204,7 +204,7 @@ namespace lisp {
 	}
       dispatch<void> dispatcher(arglist->cdr);
       dispatcher.args = args;
-      c->fns[s] = function(dispatcher);
+      c->put(s, function(dispatcher));
 
       return s;
     }

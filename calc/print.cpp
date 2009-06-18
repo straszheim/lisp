@@ -58,7 +58,7 @@ namespace lisp {
   void cons_print::operator()(const function f) const
   {
     SHOW;
-    os << "function@" << &f << "\n";
+    os << "function@" << &f;
   }
 
   void cons_print::operator()(const variant v) const

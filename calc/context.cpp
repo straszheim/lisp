@@ -14,41 +14,48 @@ namespace lisp
     dump(std::cout);
     context_ptr this_ptr = shared_from_this();
     assert(this_ptr.get() == this);
-    newscope->next = this_ptr;
+    newscope->next_ = this_ptr;
     std::cout << "new ";
     newscope->dump(std::cout);
     return newscope;
   }
 
-  function context::get_function(const std::string& s)
+  template <typename T>
+  T& context::convert(variant& v)
   {
-    std::cout << "looking for " << s << "\n";
-    context_ptr ctx = shared_from_this();
-    ctx->dump(std::cerr);
-    while (ctx)
-      {
-	std::map<std::string, function>::iterator iter = ctx->fns.find(s);
-	if (iter != ctx->fns.end())
-	  return iter->second;
-	ctx = ctx->next;
-      }
-    throw std::runtime_error("function not found");
+    return boost::get<T>(v);
   }
 
-  variant context::get_variable(const std::string& s)
+  template <>
+  variant& 
+  context::convert<variant>(variant& v)
+  {
+    return v;
+  }
+
+  template <typename T>
+  T& context::get(const std::string& s)
   {
     std::cout << "looking for " << s << "\n";
     context_ptr ctx = shared_from_this();
     ctx->dump(std::cerr);
     while (ctx)
       {
-	std::map<std::string, variant>::iterator iter = ctx->table.find(s);
-	if (iter != ctx->table.end())
-	  return iter->second;
-	ctx = ctx->next;
+	std::map<std::string, variant>::iterator iter = ctx->m_.find(s);
+	if (iter != ctx->m_.end())
+	  return convert<T>(iter->second);
+	ctx = ctx->next_;
       }
-    throw std::runtime_error("variable not found");
+    throw std::runtime_error("symbol not found");
   }
+
+  void context::put(const std::string& s, variant v)
+  {
+    m_[s] = v;
+  }
+
+  template variant& context::get(const std::string&);
+  template function& context::get(const std::string&);
 
   void context::dump(std::ostream& os) const
   {
@@ -56,16 +63,9 @@ namespace lisp
 
     while (ctx)
       {
-	std::cout << "[fns ";
-	for (std::map<std::string, function>::const_iterator iter = ctx->fns.begin();
-	     iter != ctx->fns.end();
-	     iter++)
-	  {
-	    os << iter->first << (!iter->second ? "!!!  " : "  ");
-	  }
-	os << "]\n[vars ";
-	for (std::map<std::string, variant>::const_iterator iter = ctx->table.begin();
-	     iter != ctx->table.end();
+	std::cout << "[ ";
+	for (std::map<std::string, variant>::const_iterator iter = ctx->m_.begin();
+	     iter != ctx->m_.end();
 	     iter++)
 	  {
 	    os << "\t" << iter->first << " ";
@@ -74,7 +74,7 @@ namespace lisp
 	    os << "\n";
 	  }
 	os << "]\n";
-	ctx = ctx->next;
+	ctx = ctx->next_;
       }
   }
 

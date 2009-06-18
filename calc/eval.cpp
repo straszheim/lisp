@@ -37,7 +37,7 @@ namespace lisp
     
   variant eval_visitor::operator()(const symbol& s)
   {
-    return ctx->get_variable(s);
+    return ctx->get<variant>(s);
   }
     
   //
@@ -54,7 +54,7 @@ namespace lisp
     SHOW;
     ctx->dump(std::cout);
     symbol sym = boost::get<symbol>(p->car);
-    function f = ctx->get_function(sym);
+    function f = ctx->get<function>(sym);
 
     return f(ctx, p->cdr);
   }

@@ -14,17 +14,23 @@ namespace lisp {
 
   struct context : boost::enable_shared_from_this<context>
   {
-    std::map<std::string, variant> table;
-    std::map<std::string, function> fns;
+    template <typename T> 
+    T& get(const std::string& name);
 
-    function get_function(const std::string&);
-    variant  get_variable(const std::string& s);
-
-    context_ptr next;
+    void put(const std::string& name, variant what);
 
     context_ptr scope();
 
     void dump(std::ostream&) const;
+
+  private:
+
+    std::map<std::string, variant> m_;
+
+    context_ptr next_;
+    template <typename T> T& convert(variant&);
+
+
   };
 
   extern context_ptr global;

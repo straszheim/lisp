@@ -51,8 +51,9 @@ namespace lisp
     template <typename T>
     variant operator()(const T& s) const
     {
-      std::cout << __PRETTY_FUNCTION__ << "\n";
-      return std::string("YEAH");
+      assert(0);
+      // something fell through
+      return std::string("oh noes");
     }
 
     variant operator()(const std::vector<char>& v) const
@@ -102,8 +103,6 @@ namespace lisp
     // cons
     variant operator()(const variant& l, const variant& r) const
     {
-      //      if (c != '\'')
-      //	throw std::runtime_error("we shouldn't ever see this");
       std::cout << __PRETTY_FUNCTION__ << "\n";
       cons_ptr c = new cons;
       
@@ -218,21 +217,21 @@ using namespace lisp;
 
 int repl(bool debug, std::istream& is)
 {
-  global->fns["+"] = lisp::function(lisp::ops::op<std::plus<double> >(0));
-  global->fns["-"] = lisp::function(lisp::ops::op<std::minus<double> >(0));
-  global->fns["*"] = lisp::function(lisp::ops::op<std::multiplies<double> >(1));
-  global->fns["/"] = lisp::function(lisp::ops::divides());
-  global->fns["quote"] = lisp::function(lisp::ops::quote());
-  global->fns["cons"] = lisp::function(lisp::ops::cons());
-  global->fns["list"] = lisp::function(lisp::ops::list());
-  global->fns["defvar"] = lisp::function(lisp::ops::defvar());
-  global->fns["print"] = lisp::function(lisp::ops::print());
-  global->fns["eval"] = lisp::function(lisp::ops::evaluate());
-  global->fns["defun"] = lisp::function(lisp::ops::defun());
-  global->fns["progn"] = lisp::function(lisp::ops::progn());
+  global->put("+", lisp::function(lisp::ops::op<std::plus<double> >(0)));
+  global->put("-", lisp::function(lisp::ops::op<std::minus<double> >(0)));
+  global->put("*", lisp::function(lisp::ops::op<std::multiplies<double> >(1)));
+  global->put("/", lisp::function(lisp::ops::divides()));
+  global->put("quote", lisp::function(lisp::ops::quote()));
+  global->put("cons", lisp::function(lisp::ops::cons()));
+  global->put("list", lisp::function(lisp::ops::list()));
+  global->put("defvar", lisp::function(lisp::ops::defvar()));
+  global->put("print", lisp::function(lisp::ops::print()));
+  global->put("eval", lisp::function(lisp::ops::evaluate()));
+  global->put("defun", lisp::function(lisp::ops::defun()));
+  global->put("progn", lisp::function(lisp::ops::progn()));
 
-  global->table["t"] = t;
-  global->table["nil"] = nil;
+  global->put("t", t);
+  global->put("nil",  nil);
 
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;
