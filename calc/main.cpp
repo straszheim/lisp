@@ -231,6 +231,7 @@ int repl(bool debug, std::istream& is)
   global->put("progn", lisp::function(lisp::ops::progn()));
   global->put("equal", lisp::function(lisp::ops::equal()));
   global->put("if", lisp::function(lisp::ops::if_clause()));
+  global->put("setf", lisp::function(lisp::ops::setf()));
 
   global->put("t", t);
   global->put("nil",  nil);

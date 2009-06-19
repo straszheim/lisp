@@ -9,8 +9,8 @@
 #include <iostream>
 #include <vector>
 
-#define SHOW std::cerr << __PRETTY_FUNCTION__ << "\n"
-// #define SHOW 
+// #define SHOW std::cerr << __PRETTY_FUNCTION__ << "\n"
+#define SHOW 
 
 namespace lisp {
   namespace ops {
@@ -153,6 +153,22 @@ namespace lisp {
       variant result = eval(ctx, next->car);
       global->put(s, result);
       return s;
+    }
+
+    variant setf::operator()(context_ptr ctx, variant v)
+    {
+      SHOW;
+      cons_ptr c = boost::get<cons_ptr>(v);
+      symbol s = boost::get<symbol>(c->car);
+      cons_ptr next = boost::get<cons_ptr>(c->cdr);
+      variant result = eval(ctx, next->car);
+      try {
+	variant& destination = ctx->get<variant>(s);
+	destination = result;
+      } catch (const std::exception&) {
+	ctx->put(s, result);
+      }
+      return result;
     }
 
     variant print::operator()(context_ptr ctx, variant v)

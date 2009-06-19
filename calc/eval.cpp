@@ -3,8 +3,8 @@
 
 #include <iostream>
 
-#define SHOW std::cout << __PRETTY_FUNCTION__ << "\n"
-// #define SHOW
+//#define SHOW std::cout << __PRETTY_FUNCTION__ << "\n"
+#define SHOW
 
 namespace lisp 
 {
