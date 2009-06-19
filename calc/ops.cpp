@@ -63,12 +63,21 @@ namespace lisp {
     variant list::operator()(context_ptr c, variant v)
     {
       SHOW;
+      cons_ptr result = new lisp::cons, tmp = result;
       cons_ptr l = boost::get<cons_ptr>(v);
-      while(l) { 
-	l->car = eval(c, l->car);
+      while(true) { 
+	tmp->car = eval(c, l->car);
 	l = boost::get<cons_ptr>(l->cdr);
+	if (l)
+	  {
+	    cons_ptr tmp2 = new lisp::cons;
+	    tmp->cdr = tmp2;
+	    tmp = tmp2;
+	  }
+	else
+	  break;
       }
-      return v;
+      return result;
     }
 
     variant defvar::operator()(context_ptr ctx, variant v)
