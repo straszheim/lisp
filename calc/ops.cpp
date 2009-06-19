@@ -80,6 +80,57 @@ namespace lisp {
       return result;
     }
 
+    struct equal_visitor
+    : public boost::static_visitor<bool>
+    {
+      template <typename T, typename U>
+      bool operator()( const T &, const U & ) const
+      {
+        return false; // cannot compare different types
+      }
+
+      template <typename T>
+      bool operator()( const T & lhs, const T & rhs ) const
+      {
+        return lhs == rhs;
+      }
+
+      template <typename T>
+      bool operator()( const lisp::function & lhs, const lisp::function & rhs ) const
+      {
+        return &lhs == &rhs;
+      }
+
+      bool operator()( const lisp::cons_ptr& lhs, const lisp::cons_ptr & rhs ) const
+      {
+	if (is_nil(lhs) && is_nil(rhs))
+	  return true;
+	if (is_nil(lhs) || is_nil(rhs))
+	  return false;
+
+        return boost::apply_visitor(*this, lhs->car, rhs->car)
+	  && boost::apply_visitor(*this, lhs->cdr, rhs->cdr);
+      }
+    };
+
+    //
+    // this is the one where they're equal if their printed representations
+    // are the same
+    //
+    variant equal::operator()(context_ptr ctx, variant v)
+    {
+      SHOW;
+      variant lhs_evalled, rhs_evalled;
+
+      cons_ptr result = new lisp::cons, tmp = result;
+      cons_ptr c = boost::get<cons_ptr>(v);
+      lhs_evalled = eval(ctx, c->car);
+      c = boost::get<cons_ptr>(c->cdr);
+      rhs_evalled = eval(ctx, c->car);
+
+      return boost::apply_visitor(equal_visitor(), lhs_evalled, rhs_evalled) ? t : nil;
+    }
+
     variant defvar::operator()(context_ptr ctx, variant v)
     {
       SHOW;

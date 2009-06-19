@@ -42,6 +42,11 @@ namespace lisp {
     bool operator!() const { return !f; }
   };
 
+  inline bool operator==(const function& lhs, const function& rhs)
+  {
+    return &lhs == &rhs;
+  }
+
   struct cons 
   {
     unsigned count;
