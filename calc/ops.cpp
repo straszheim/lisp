@@ -131,6 +131,19 @@ namespace lisp {
       return boost::apply_visitor(equal_visitor(), lhs_evalled, rhs_evalled) ? t : nil;
     }
 
+    variant if_clause::operator()(context_ptr ctx, variant v)
+    {
+      SHOW;
+      cons_ptr c = boost::get<cons_ptr>(v);
+      variant cond_evalled = eval(ctx, c->car);
+      cons_ptr next = boost::get<cons_ptr>(c->cdr);
+      variant then = next->car;
+      if (cond_evalled == t)
+	return eval(ctx, then);
+      next = boost::get<cons_ptr>(next->cdr);
+      return eval(ctx, next->car);
+    }
+
     variant defvar::operator()(context_ptr ctx, variant v)
     {
       SHOW;

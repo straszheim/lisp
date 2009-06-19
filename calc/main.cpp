@@ -229,7 +229,8 @@ int repl(bool debug, std::istream& is)
   global->put("eval", lisp::function(lisp::ops::evaluate()));
   global->put("defun", lisp::function(lisp::ops::defun()));
   global->put("progn", lisp::function(lisp::ops::progn()));
-  global->put("eql", lisp::function(lisp::ops::eql()));
+  global->put("equal", lisp::function(lisp::ops::equal()));
+  global->put("if", lisp::function(lisp::ops::if_clause()));
 
   global->put("t", t);
   global->put("nil",  nil);

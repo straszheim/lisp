@@ -18,6 +18,7 @@ namespace lisp {
     OP_FWD_DECL(progn);
     OP_FWD_DECL(defun);
     OP_FWD_DECL(equal);
+    OP_FWD_DECL(if_clause);
 
     template <typename Op>
     struct op 
