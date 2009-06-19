@@ -16,7 +16,6 @@ namespace lisp
   { 
     std::string fname = (boost::format("%s%u.dot") % prefix % n).str();
     os = new std::ofstream(fname.c_str());
-    std::cout << "opened file " << fname << "\n";
     
     *os << "digraph g {";
   }

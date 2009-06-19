@@ -90,7 +90,7 @@ namespace lisp
     {
       // if (c != '\'')
       //   throw std::runtime_error("we shouldn't ever see this");
-      std::cout << __PRETTY_FUNCTION__ << "\n";
+      //std::cout << __PRETTY_FUNCTION__ << "\n";
       cons_ptr head = new cons;
       cons_ptr tail = new cons;
       tail->car = v;
@@ -103,7 +103,7 @@ namespace lisp
     // cons
     variant operator()(const variant& l, const variant& r) const
     {
-      std::cout << __PRETTY_FUNCTION__ << "\n";
+      //std::cout << __PRETTY_FUNCTION__ << "\n";
       cons_ptr c = new cons;
       
       c->car = l;
@@ -215,7 +215,7 @@ namespace lisp
 
 using namespace lisp;
 
-int repl(bool debug, std::istream& is)
+void add_builtins()
 {
   global->put("+", lisp::function(lisp::ops::op<std::plus<double> >(0)));
   global->put("-", lisp::function(lisp::ops::op<std::minus<double> >(0)));
@@ -235,7 +235,11 @@ int repl(bool debug, std::istream& is)
 
   global->put("t", t);
   global->put("nil",  nil);
+}
 
+
+int repl(bool debug, std::istream& is)
+{
   using boost::spirit::ascii::space;
   typedef std::string::const_iterator iterator_type;
   typedef lisp::interpreter<iterator_type> interpreter_t;
@@ -243,6 +247,8 @@ int repl(bool debug, std::istream& is)
   interpreter_t lispi(debug); // Our grammar
   
   std::string str;
+  
+  std::cout << "A lisp interpreting plaything\n(c) 2009 Troy D. Straszheim\n";
   
   std::cout << "----------------------------\n> ";
 
@@ -302,14 +308,82 @@ int repl(bool debug, std::istream& is)
 }
 
 
+int offline(bool debug, std::istream& is)
+{
+  using boost::spirit::ascii::space;
+  typedef std::string::const_iterator iterator_type;
+  typedef lisp::interpreter<iterator_type> interpreter_t;
+  
+  interpreter_t lispi(debug); // Our grammar
+  
+  std::string code;
+  
+  unsigned i = 0;
+
+  do {
+    char c = is.get();
+    if (! is.eof())
+      code += c;
+  } while (! is.eof());
+
+  std::string::const_iterator pos = code.begin(), end = code.end();
+
+  while (pos < end)
+    {
+      i++;
+      lisp::variant result;
+      bool r = phrase_parse(pos, end, lispi, space, result);
+
+      lisp::cons_debug dbg(std::cout);
+      lisp::cons_print repr(std::cout);
+
+      if (r)
+        {
+	  cons_ptr c = new cons(result);
+
+	  if (debug)
+	    {
+	      std::cout << "\nparsed as> ";
+	      dbg(result);
+	      lisp::dot d("parsed", i);
+	      d(result);
+
+	      std::cout << "\nparsed as> ";
+	      repr(result);
+	      std::cout << "\n";
+	    }
+
+	  try {
+	    variant out = eval(global, result);
+	    if (debug)
+	      {
+		std::cout << "\nevalled to> ";
+		dbg(out);
+		std::cout << "\n";
+		lisp::dot d("result", i);
+		d(out);
+	      }
+	  } catch (const std::exception& e) {
+	    std::cout << "*** - EVAL exception caught: " << e.what() << "\n";
+	  }
+        }
+      else
+        {
+	  throw std::runtime_error("parsing failed");
+        }
+    }
+  return 0;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 //  Main program
 ///////////////////////////////////////////////////////////////////////////////
 int
 main(int argc, char** argv)
 {
-  std::cout << "A lisp interpreting plaything\n(c) 2009 Troy D. Straszheim\n";
-  
+  add_builtins();
+
   std::list<std::string> args(argv+1, argv+argc);
 
   bool debug;
@@ -321,7 +395,7 @@ main(int argc, char** argv)
   if (args.size() == 1)
     {
       std::ifstream is(args.front().c_str());
-      repl(debug, is);
+      offline(debug, is);
     }
   else
     repl(debug, std::cin);

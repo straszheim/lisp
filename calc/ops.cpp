@@ -265,13 +265,13 @@ namespace lisp {
 	progn->car = symbol("progn");
 	progn->cdr = code;
 	variant v2(progn);
-	dout("readytorun", v2);
-	std::cout << "READY TO RUN:";
-	debug(v2);
+	//	dout("readytorun", v2);
+	//	std::cout << "READY TO RUN:";
+	//debug(v2);
 	variant result = eval(scope, v2);
-	std::cout << "\nNOW IT IS:";
-	dout("afterrun", v2);
-	debug(v2);
+	//	std::cout << "\nNOW IT IS:";
+	//	dout("afterrun", v2);
+	//	debug(v2);
 	return result;
       }
     };
@@ -279,7 +279,7 @@ namespace lisp {
     variant defun::operator()(context_ptr c, variant v)
     {
       SHOW;
-      c->dump(std::cout);
+      //      c->dump(std::cout);
       cons_ptr top = boost::get<cons_ptr>(v);
       symbol s = boost::get<symbol>(top->car);
       cons_ptr arglist = boost::get<cons_ptr>(top->cdr);
@@ -289,7 +289,7 @@ namespace lisp {
 	{
 	  symbol s = boost::get<symbol>(l->car);
 	  args.push_back(s);
-	  std::cout << "ARG: " << s << "\n";
+	  //	  std::cout << "ARG: " << s << "\n";
 	  l = boost::get<cons_ptr>(l->cdr);
 	}
       dispatch<void> dispatcher(arglist->cdr);
