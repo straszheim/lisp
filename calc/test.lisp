@@ -1,8 +1,10 @@
 (defvar passes 0)
 (defvar failures 0)
 
-(defun fail () 
+(defun fail (what) 
   (setf failures (+ 1 failures)) 
+  (print "FAIL")
+  (print what)
   'fail)
 
 (defun pass () 
@@ -10,18 +12,18 @@
   'pass)
 
 (defun test (what) 
-  (if what (pass) (fail)))
+  (if (eval what) (pass) (fail what)))
 
-(test (equal 1 1))
-(test (equal (+ 1 2) (+ 2 1)))
+(test '(equal 1 1))
+(test '(equal (+ 1 2) (+ 2 1)))
 
 (defvar *x* 17)
 (setf x 17)
-(test (equal x *x*))
+(test '(equal x *x*))
 
 (defun f (x) (+ x x))
 (defun g (y) (+ y y))
-(test (equal (f 17) (g (+ 1 16))))
+(test '(equal (f 17) (g (+ 1 16))))
 
 (defun h (x)
   (setf k 17)
@@ -29,19 +31,25 @@
 
 (setf k 99)
 
-(test (equal (h 18) (+ 17 18)))
+(test '(equal (h 18) (+ 17 18)))
 
 (defun i (x)
   (+ x k))
 
 (print (i 2))
 
-(test (equal (- 1 1) 0))
-(test (equal (- 2 1) 1))
-(test (equal (- 100 1) 99))
+(test '(equal (- 1 1) 0))
+(test '(equal (- 2 1) 1))
+(test '(equal (- 100 1) 99))
 
 
-(test (equal (i 2) (+ 99 2)))
+(test '(equal (i 2) (+ 99 2)))
+
+(test '(equal (/ 1) 1))
+(test '(equal (/ 2) 0.5))
+(test '(equal (- 1) -1))
+(test '(equal (- 1 1 1) -1))
+(test '(equal (- 2 1) 1))
 
 (defun factorial (x)
   (print x)
@@ -49,11 +57,11 @@
       1
     (* x (factorial (- x 1)))))
 
-'(equal (factorial 1) 1)
-'(equal (factorial 2) 2)
-'(equal (factorial 3) 6)
-'(equal (factorial 4) 24)
-'(equal (factorial 5) 120)
+(test '(equal (factorial 1) 1))
+(test '(equal (factorial 2) 2))
+(test '(equal (factorial 3) 6))
+(test '(equal (factorial 4) 24))
+(test '(equal (factorial 5) 120))
 
 
 

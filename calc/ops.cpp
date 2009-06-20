@@ -18,7 +18,8 @@ namespace lisp {
   namespace ops {
 
     template <typename Op>
-    variant op<Op>::operator()(context_ptr c, variant v)
+    variant 
+    op<Op>::operator()(context_ptr c, variant v)
     {
       SHOW;
       double r = initial;
@@ -38,34 +39,46 @@ namespace lisp {
     {
       SHOW;
 
-      cons_ptr l = get<cons_ptr>(v);
-      while(l)
+      std::vector<variant> args;
+      while(!is_nil(v))
 	{
-	  l->car = eval(c, l->car);
-	  l = get<cons_ptr>(l->cdr);
+	  args.push_back(eval(c, v >> car));
+	  v = v >> cdr;
 	}
 
-      double r = get<double>(l->car);
-      l = get<cons_ptr>(l->cdr);
+      double d = get<double>(args[0]);
+      if (args.size() == 1)
+	return 1.0 / d;
+      for (int i=1; i<args.size(); i++)
+	d /= get<double>(args[i]);
 
-      if (! l)
-	return 1.0 / r;
+      return d;
+    }
 
-      l = get<cons_ptr>(v);
-      while(l)
+    variant minus::operator()(context_ptr c, variant v)
+    {
+      SHOW;
+
+      std::vector<variant> args;
+      while(!is_nil(v))
 	{
-	  double n = get<double>(l->car);
-	  r /= n;
-	  l = get<cons_ptr>(l->cdr);
+	  args.push_back(eval(c, v >> car));
+	  v = v >> cdr;
 	}
-      return r;
+
+      double d = get<double>(args[0]);
+      if (args.size() == 1)
+	return -d;
+      for (int i=1; i<args.size(); i++)
+	d -= get<double>(args[i]);
+
+      return d;
     }
 
     template <typename Op>
     op<Op>::op(double _initial) : initial(_initial) { }
 
     template struct op<std::plus<double> >;
-    template struct op<std::minus<double> >;
     template struct op<std::multiplies<double> >;
 
     variant cons::operator()(context_ptr c, variant v)

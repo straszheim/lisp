@@ -218,8 +218,8 @@ using namespace lisp;
 void add_builtins()
 {
   global->put("+", lisp::function(lisp::ops::op<std::plus<double> >(0)));
-  global->put("-", lisp::function(lisp::ops::op<std::minus<double> >(0)));
   global->put("*", lisp::function(lisp::ops::op<std::multiplies<double> >(1)));
+  global->put("-", lisp::function(lisp::ops::minus()));
   global->put("/", lisp::function(lisp::ops::divides()));
   global->put("quote", lisp::function(lisp::ops::quote()));
   global->put("cons", lisp::function(lisp::ops::cons()));

@@ -10,6 +10,7 @@ namespace lisp {
   namespace ops {
     OP_FWD_DECL(cons);
     OP_FWD_DECL(divides);
+    OP_FWD_DECL(minus);
     OP_FWD_DECL(list);
     OP_FWD_DECL(defvar);
     OP_FWD_DECL(quote);
