@@ -1,5 +1,12 @@
-(defvar passes 0)
-(defvar failures 0)
+
+;; #!/usr/bin/sbcl
+;; #!/home/troy/Projects/boospiele/calc/build/lisp
+;;
+;; silly test suite
+;;
+
+(defvar passes 0)     ; this is where we will keep the passes
+(defvar failures 0)   ; lo and behold the failures go here
 
 (defun fail (what) 
   (setf failures (+ 1 failures)) 
@@ -13,6 +20,9 @@
 
 (defun test (what) 
   (if (eval what) (pass) (fail what)))
+
+(test '(equal t t))
+(test '(equal nil ()))
 
 (test '(equal 1 1))
 (test '(equal (+ 1 2) (+ 2 1)))
@@ -36,7 +46,7 @@
 (defun i (x)
   (+ x k))
 
-(print (i 2))
+(print (i 2))   ; hi
 
 (test '(equal (- 1 1) 0))
 (test '(equal (- 2 1) 1))
@@ -45,8 +55,15 @@
 
 (test '(equal (i 2) (+ 99 2)))
 
+;
+;  unary divides is reciprocal
+;
 (test '(equal (/ 1) 1))
 (test '(equal (/ 2) 0.5))
+
+;
+;  unary minus is negate
+;
 (test '(equal (- 1) -1))
 (test '(equal (- 1 1 1) -1))
 (test '(equal (- 2 1) 1))

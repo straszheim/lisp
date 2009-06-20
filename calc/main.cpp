@@ -24,6 +24,10 @@
 #include "print.hpp"
 #include "dot.hpp"
 
+using namespace boost::spirit;
+using namespace boost::spirit::qi;
+using namespace boost::spirit::ascii;
+
 namespace lisp
 {
   namespace qi = boost::spirit::qi;
@@ -114,8 +118,24 @@ namespace lisp
   };
 
   template <typename Iterator>
+  struct white_space : boost::spirit::qi::grammar<Iterator>
+  {
+    white_space() : white_space::base_type(start)
+    {
+      using namespace qi;
+
+      start =
+          space                            // tab/space/cr/lf
+	| ";" >> *(char_ - eol) >> eol     // C-style comments
+	;
+    }
+
+    rule<Iterator> start;
+  };
+
+  template <typename Iterator>
   struct interpreter 
-    : qi::grammar<Iterator, variant(), ascii::space_type>
+    : qi::grammar<Iterator, variant(), white_space<Iterator> >
   {
     boost::phoenix::function<lisp::process> p;
 
@@ -130,8 +150,10 @@ namespace lisp
       using qi::int_;
       using qi::uint_;
       using qi::lit;
+      using qi::eol;
       using qi::on_error;
       using qi::fail;
+      using qi::omit;
       using qi::debug;
       using boost::phoenix::construct;
       using boost::spirit::lexeme;
@@ -139,8 +161,24 @@ namespace lisp
       
       using namespace boost::phoenix;
       
+      sexpr =
+	  atom                         [ _val = _1 ] 
+	| nil                          [ _val = val(::lisp::nil) ]
+	| ( char_("'") >> sexpr )      [ _val = p(_1, _2) ]
+	| quote                        [ _val = _1 ]
+	| cons                         [ _val = _1 ]
+	| ( char_("(") >> ( +sexpr )   [ _val = p(_1) ] 
+          >> char_(")"))
+	;
+      
       identifier = 
-	  raw[lexeme[+(alnum | '+' | '-' | '*' | '/')]][_val = p(_1)];
+	raw
+	[
+	   lexeme
+	   [
+	      +(alnum | '+' | '-' | '*' | '/')
+	   ]
+	][_val = p(_1)];
 
       quoted_string = 
 	lexeme['"' >> +(char_ - '"') >> '"'][_val = p(_1)];
@@ -154,15 +192,6 @@ namespace lisp
       nil = 
           (char_("(") >> char_(")"));
 
-      sexpr =
-	  atom                      [ _val = _1 ] 
-	| nil                       [ _val = val(::lisp::nil) ]
-	| (char_("'") >> sexpr)     [ _val = p(_1, _2) ]
-	| quote                     [ _val = _1 ]
-	| cons                      [ _val = _1 ]
-	| (char_("(") >> (+sexpr)   [ _val = p(_1) ] >> char_(")"))
-	;
-      
       quote = 
 	(char_("(") >> "quote" >> sexpr >> char_(")"))   [ _val = p(_1, _2) ]
 	;
@@ -192,6 +221,7 @@ namespace lisp
 	  quote.name("quote");
 	  cons.name("cons");
 	  quoted_string.name("quoted_string");
+	  start.name("start");
 
 
 	  debug(nil);
@@ -201,14 +231,12 @@ namespace lisp
 	  debug(quote);
 	  debug(cons);
 	  debug(quoted_string);
+	  debug(start);
 	}
     }
     
-    qi::rule<Iterator, variant(), ascii::space_type> 
-    atom, sexpr, nil, identifier, quote, cons, quoted_string;
-    //    qi::rule<Iterator, std::string(), qi::locals<std::string>, ascii::space_type> 
-    //    quoted_string;
-
+    qi::rule<Iterator, variant(), white_space<Iterator> > 
+    start, atom, sexpr, nil, identifier, quote, cons, quoted_string/*, comment*/;
   };
 
 }
@@ -238,12 +266,13 @@ void add_builtins()
 }
 
 
+typedef std::string::const_iterator iterator_type;
+typedef lisp::interpreter<iterator_type> interpreter_t;
+typedef white_space<iterator_type> skipper_t;
+skipper_t skipper;
+
 int repl(bool debug, std::istream& is)
 {
-  using boost::spirit::ascii::space;
-  typedef std::string::const_iterator iterator_type;
-  typedef lisp::interpreter<iterator_type> interpreter_t;
-  
   interpreter_t lispi(debug); // Our grammar
   
   std::string str;
@@ -257,49 +286,57 @@ int repl(bool debug, std::istream& is)
   while (std::getline(is, str))
     {
       i++;
+      str += "\n";
       std::string::const_iterator iter = str.begin();
       std::string::const_iterator end = str.end();
       lisp::variant result;
-      bool r = phrase_parse(iter, end, lispi, space, result);
-
-      lisp::cons_debug dbg(std::cout);
-      lisp::cons_print repr(std::cout);
-
-      if (r && iter == end)
-        {
-	  cons_ptr c = new cons(result);
-
-	  if (debug)
+      while (iter != end)
+	{
+	  bool r = phrase_parse(iter, end, lispi, skipper, result);
+	  if (!r && iter == end)
 	    {
-	      std::cout << "\nparsed as> ";
-	      dbg(result);
-	      lisp::dot d("parsed", i);
-	      d(result);
-
-	      std::cout << "\nparsed as> ";
-	      repr(result);
-	      std::cout << "\n";
+	      std::cout << "YEAH";
 	    }
+	  if (!r)
+	    {
+	      std::cout << "Error, parsing failed\n";
+	      iter = end;
+	    }
+	  else
+	    {
+	      lisp::cons_debug dbg(std::cout);
+	      lisp::cons_print repr(std::cout);
 
-	  try {
-	    variant out = eval(global, result);
-	    if (debug)
-	      {
-		std::cout << "\nevalled to> ";
-		dbg(out);
+	      cons_ptr c = new cons(result);
+
+	      if (debug)
+		{
+		  std::cout << "\nparsed as> ";
+		  dbg(result);
+		  lisp::dot d("parsed", i);
+		  d(result);
+
+		  std::cout << "\nparsed as> ";
+		  repr(result);
+		  std::cout << "\n";
+		}
+
+	      try {
+		variant out = eval(global, result);
+		if (debug)
+		  {
+		    std::cout << "\nevalled to> ";
+		    dbg(out);
+		    std::cout << "\n";
+		    lisp::dot d("result", i);
+		    d(out);
+		  }
+		repr(out);
 		std::cout << "\n";
-		lisp::dot d("result", i);
-		d(out);
+	      } catch (const std::exception& e) {
+		std::cout << "*** - EVAL exception caught: " << e.what() << "\n";
 	      }
-	    repr(out);
-	    std::cout << "\n";
-	  } catch (const std::exception& e) {
-	    std::cout << "*** - EVAL exception caught: " << e.what() << "\n";
-	  }
-        }
-      else
-        {
-	  std::cout << "Error, parsing failed\n";
+	    }
         }
       std::cout << "> ";
     }
@@ -310,10 +347,6 @@ int repl(bool debug, std::istream& is)
 
 int offline(bool debug, std::istream& is)
 {
-  using boost::spirit::ascii::space;
-  typedef std::string::const_iterator iterator_type;
-  typedef lisp::interpreter<iterator_type> interpreter_t;
-  
   interpreter_t lispi(debug); // Our grammar
   
   std::string code;
@@ -330,9 +363,10 @@ int offline(bool debug, std::istream& is)
 
   while (pos < end)
     {
+      std::cout << "diff:" << end-pos << "\n";
       i++;
       lisp::variant result;
-      bool r = phrase_parse(pos, end, lispi, space, result);
+      bool r = phrase_parse(pos, end, lispi, skipper, result);
 
       lisp::cons_debug dbg(std::cout);
       lisp::cons_print repr(std::cout);
@@ -371,6 +405,7 @@ int offline(bool debug, std::istream& is)
         {
 	  throw std::runtime_error("parsing failed");
         }
+      std::cout << "diff:" << end-pos << "\n";
     }
   return 0;
 }

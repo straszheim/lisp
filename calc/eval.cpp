@@ -52,6 +52,8 @@ namespace lisp
   variant eval_visitor::operator()(const cons_ptr& p)
   {
     SHOW;
+    if (p == boost::get<cons_ptr>(nil))
+      return p;
     //    ctx->dump(std::cout);
     symbol sym = boost::get<symbol>(p->car);
     function f = ctx->get<function>(sym);
