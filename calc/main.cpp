@@ -60,9 +60,17 @@ namespace lisp
       return std::string("oh noes");
     }
 
+    template <typename T, typename U>
+    variant operator()(const T& s, const U& t) const
+    {
+      assert(0);
+      // something fell through
+      return std::string("oh noes");
+    }
+
     variant operator()(const std::vector<char>& v) const
     {
-      return std::string(v.begin(), v.end());
+      return std::string(v.data(), v.data() + v.size());
     }
 
     variant operator()(boost::iterator_range<std::string::const_iterator> r, double) const
@@ -117,6 +125,30 @@ namespace lisp
     }
   };
 
+  ///////////////////////////////////////////////////////////////////////////////
+  //  Our error handler
+  ///////////////////////////////////////////////////////////////////////////////
+  struct error_handler_
+  {
+    template <typename, typename, typename>
+    struct result { typedef void type; };
+
+    template <typename Iterator>
+    void operator()(info const& what, Iterator err_pos, Iterator last) const
+    {
+      std::cout
+	<< "Error! Expecting "
+	<< what                         // what failed?
+	<< " here: \""
+	<< std::string(err_pos, last)   // iterators to error-pos, end
+	<< "\""
+	<< std::endl
+        ;
+    }
+  };
+
+  phoenix::function<error_handler_> const error_handler = error_handler_();
+
   template <typename Iterator>
   struct white_space : boost::spirit::qi::grammar<Iterator>
   {
@@ -168,7 +200,7 @@ namespace lisp
 	| quote                        [ _val = _1 ]
 	| cons                         [ _val = _1 ]
 	| ( char_("(") >> ( +sexpr )   [ _val = p(_1) ] 
-          >> char_(")"))
+          > char_(")"))
 	;
       
       identifier = 
@@ -180,8 +212,16 @@ namespace lisp
 	   ]
 	][_val = p(_1)];
 
+      escaped_char = (('\\' >> char_) | (char_ - '"'))[_val = _1];
+
       quoted_string = 
-	lexeme['"' >> +(char_ - '"') >> '"'][_val = p(_1)];
+	lexeme['"' 
+	       >> +escaped_char //(char_ - '"') 
+	       >> '"'
+	       ][
+		 _val = p(_1) 
+		 ]
+	;
 
       atom %=
           double_     
@@ -200,17 +240,10 @@ namespace lisp
 	(char_("(") >> sexpr >> char_(".") >> sexpr >> char_(")"))   [ _val = p(_2, _4) ]
 	;
 
-      on_error<fail>
-	(
-	 sexpr
-	 , std::cout
-	 << val("Error! Expecting ")
-	 << _4                               // what failed?
-	 << val(" here: \"")
-	 << construct<std::string>(_3, _2)   // iterators to error-pos, end
-	 << val("\"")
-	 << std::endl
-	 );
+      //on_error<fail>(sexpr, error_handler(_4, _3, _2));
+      //on_error<retry>(sexpr, error_handler(_4, _3, _2));
+      //on_error<accept>(sexpr, error_handler(_4, _3, _2));
+      //on_error<rethrow>(sexpr, error_handler(_4, _3, _2));
       
       if (show_debug)
 	{
@@ -222,7 +255,7 @@ namespace lisp
 	  cons.name("cons");
 	  quoted_string.name("quoted_string");
 	  start.name("start");
-
+	  escaped_char.name("escaped_char");
 
 	  debug(nil);
 	  debug(atom);
@@ -232,11 +265,15 @@ namespace lisp
 	  debug(cons);
 	  debug(quoted_string);
 	  debug(start);
+	  debug(escaped_char);
 	}
     }
     
     qi::rule<Iterator, variant(), white_space<Iterator> > 
-    start, atom, sexpr, nil, identifier, quote, cons, quoted_string/*, comment*/;
+    start, atom, sexpr, nil, identifier, quote, cons, quoted_string;
+
+    qi::rule<Iterator, char()> escaped_char;
+
   };
 
 }
@@ -293,13 +330,10 @@ int repl(bool debug, std::istream& is)
       while (iter != end)
 	{
 	  bool r = phrase_parse(iter, end, lispi, skipper, result);
-	  if (!r && iter == end)
-	    {
-	      std::cout << "YEAH";
-	    }
+
 	  if (!r)
 	    {
-	      std::cout << "Error, parsing failed\n";
+	      std::cout << "parsing failed.\n";
 	      iter = end;
 	    }
 	  else
