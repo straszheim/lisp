@@ -266,19 +266,16 @@ namespace lisp {
     {
       SHOW;
 
-      cons_ptr top = get<cons_ptr>(v);
-      symbol s = get<symbol>(top->car);
-      cons_ptr arglist = get<cons_ptr>(top->cdr);
-      cons_ptr l = get<cons_ptr>(arglist->car);
+      symbol s = get<symbol>(v >> car);
+      variant l = v >> cdr >> car;
       std::vector<symbol> args;
-      while (l)
+      while (! is_nil(l))
 	{
-	  symbol s = get<symbol>(l->car);
+	  symbol s = get<symbol>(l >> car);
 	  args.push_back(s);
-	  //	  std::cout << "ARG: " << s << "\n";
-	  l = get<cons_ptr>(l->cdr);
+	  l = l >> cdr;
 	}
-      dispatch<void> dispatcher(arglist->cdr);
+      dispatch<void> dispatcher(v >> cdr >> cdr);
       dispatcher.args = args;
       c->put(s, function(dispatcher));
 

@@ -49,11 +49,11 @@
       1
     (* x (factorial (- x 1)))))
 
-(test (equal (factorial 1) 1))
-(test (equal (factorial 2) 2))
-(test (equal (factorial 3) 6))
-(test (equal (factorial 4) 24))
-(test (equal (factorial 5) 120))
+'(equal (factorial 1) 1)
+'(equal (factorial 2) 2)
+'(equal (factorial 3) 6)
+'(equal (factorial 4) 24)
+'(equal (factorial 5) 120)
 
 
 
