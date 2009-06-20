@@ -212,15 +212,11 @@ namespace lisp
 	   ]
 	][_val = p(_1)];
 
-      escaped_char = (('\\' >> char_) | (char_ - '"'))[_val = _1];
+      escaped_char %= ('\\' >> char_) | (char_ - '"')
+	;
 
       quoted_string = 
-	lexeme['"' 
-	       >> +escaped_char //(char_ - '"') 
-	       >> '"'
-	       ][
-		 _val = p(_1) 
-		 ]
+	lexeme['"' >> +escaped_char >> '"'][ _val = p(_1) ]
 	;
 
       atom %=
@@ -395,9 +391,13 @@ int offline(bool debug, std::istream& is)
 
   std::string::const_iterator pos = code.begin(), end = code.end();
 
+  // if there's a hashbang,  strip her
+  if (*pos == '#')
+    while (*pos != '\n')
+      pos++;
+
   while (pos < end)
     {
-      std::cout << "diff:" << end-pos << "\n";
       i++;
       lisp::variant result;
       bool r = phrase_parse(pos, end, lispi, skipper, result);
@@ -439,7 +439,6 @@ int offline(bool debug, std::istream& is)
         {
 	  throw std::runtime_error("parsing failed");
         }
-      std::cout << "diff:" << end-pos << "\n";
     }
   return 0;
 }
