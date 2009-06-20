@@ -12,6 +12,8 @@
 // #define SHOW std::cerr << __PRETTY_FUNCTION__ << "\n"
 #define SHOW 
 
+using boost::get;
+
 namespace lisp {
   namespace ops {
 
@@ -21,14 +23,40 @@ namespace lisp {
       SHOW;
       double r = initial;
 
-      cons_ptr l = boost::get<cons_ptr>(v);
       std::vector<double> vd;
+      while(!is_nil(v))
+	{
+	  variant result = eval(c, v >> car);
+	  double d = get<double>(result);
+	  r = op_(r, d);
+	  v = v >> cdr;
+	}
+      return r;
+    }
+
+    variant divides::operator()(context_ptr c, variant v)
+    {
+      SHOW;
+
+      cons_ptr l = get<cons_ptr>(v);
       while(l)
 	{
-	  variant result = eval(c, l->car);
-	  double d = boost::get<double>(result);
-	  r = op_(r, d);
-	  l = boost::get<cons_ptr>(l->cdr);
+	  l->car = eval(c, l->car);
+	  l = get<cons_ptr>(l->cdr);
+	}
+
+      double r = get<double>(l->car);
+      l = get<cons_ptr>(l->cdr);
+
+      if (! l)
+	return 1.0 / r;
+
+      l = get<cons_ptr>(v);
+      while(l)
+	{
+	  double n = get<double>(l->car);
+	  r /= n;
+	  l = get<cons_ptr>(l->cdr);
 	}
       return r;
     }
@@ -43,41 +71,40 @@ namespace lisp {
     variant cons::operator()(context_ptr c, variant v)
     {
       SHOW;
-      cons_ptr a1 = boost::get<cons_ptr>(v);
-      cons_ptr a2 = boost::get<cons_ptr>(a1->cdr);
       cons_ptr nc = new lisp::cons;
-      nc->car = a1->car;
-      nc->cdr = a2->car;
+      nc->car = v >> car;
+      nc->cdr = v >> cdr >> car;
       return nc;
     }
 
     variant quote::operator()(context_ptr c, variant v)
     {
       SHOW;
-      cons_ptr l = boost::get<cons_ptr>(v);
-      if (! is_nil(l->cdr))
+      if (! is_nil(v >> cdr))
 	throw std::runtime_error("wrong number of args to quote");
-      return l->car;
+      return v >> car;
     }
 
     variant list::operator()(context_ptr c, variant v)
     {
       SHOW;
-      cons_ptr result = new lisp::cons, tmp = result;
-      cons_ptr l = boost::get<cons_ptr>(v);
-      while(true) { 
-	tmp->car = eval(c, l->car);
-	l = boost::get<cons_ptr>(l->cdr);
-	if (l)
-	  {
-	    cons_ptr tmp2 = new lisp::cons;
-	    tmp->cdr = tmp2;
-	    tmp = tmp2;
-	  }
-	else
-	  break;
-      }
-      return result;
+      cons_ptr head = new lisp::cons, tail = head;
+
+      while(true)
+	{
+	  tail->car = eval(c, v >> car);
+	  if (! is_nil(v >> cdr))
+	    {
+	      v = v >> cdr;
+	      cons_ptr tmp = new lisp::cons;
+	      tail->cdr = tmp;
+	      tail = tmp;
+	    }
+	  else
+	    break;
+	}
+
+      return head;
     }
 
     struct equal_visitor
@@ -120,13 +147,9 @@ namespace lisp {
     variant equal::operator()(context_ptr ctx, variant v)
     {
       SHOW;
-      variant lhs_evalled, rhs_evalled;
 
-      cons_ptr result = new lisp::cons, tmp = result;
-      cons_ptr c = boost::get<cons_ptr>(v);
-      lhs_evalled = eval(ctx, c->car);
-      c = boost::get<cons_ptr>(c->cdr);
-      rhs_evalled = eval(ctx, c->car);
+      variant lhs_evalled = eval(ctx, v >> car);
+      variant rhs_evalled = eval(ctx, v >> cdr >> car);
 
       return boost::apply_visitor(equal_visitor(), lhs_evalled, rhs_evalled) ? t : nil;
     }
@@ -134,23 +157,19 @@ namespace lisp {
     variant if_clause::operator()(context_ptr ctx, variant v)
     {
       SHOW;
-      cons_ptr c = boost::get<cons_ptr>(v);
-      variant cond_evalled = eval(ctx, c->car);
-      cons_ptr next = boost::get<cons_ptr>(c->cdr);
-      variant then = next->car;
+      variant cond_evalled = eval(ctx, v >> car);
+
       if (cond_evalled == t)
-	return eval(ctx, then);
-      next = boost::get<cons_ptr>(next->cdr);
-      return eval(ctx, next->car);
+	return eval(ctx, v >> cdr >> car);
+      else
+	return eval(ctx, v >> cdr >> cdr >> car);
     }
 
     variant defvar::operator()(context_ptr ctx, variant v)
     {
       SHOW;
-      cons_ptr c = boost::get<cons_ptr>(v);
-      symbol s = boost::get<symbol>(c->car);
-      cons_ptr next = boost::get<cons_ptr>(c->cdr);
-      variant result = eval(ctx, next->car);
+      symbol s = get<symbol>(v >> car);
+      variant result = eval(ctx, v >> cdr >> car);
       global->put(s, result);
       return s;
     }
@@ -158,10 +177,8 @@ namespace lisp {
     variant setf::operator()(context_ptr ctx, variant v)
     {
       SHOW;
-      cons_ptr c = boost::get<cons_ptr>(v);
-      symbol s = boost::get<symbol>(c->car);
-      cons_ptr next = boost::get<cons_ptr>(c->cdr);
-      variant result = eval(ctx, next->car);
+      symbol s = get<symbol>(v >> car);
+      variant result = eval(ctx, v >> cdr >> car);
       try {
 	variant& destination = ctx->get<variant>(s);
 	destination = result;
@@ -174,8 +191,7 @@ namespace lisp {
     variant print::operator()(context_ptr ctx, variant v)
     {
       SHOW;
-      cons_ptr arg = boost::get<cons_ptr>(v);
-      variant evalled = eval(ctx, arg->car);
+      variant evalled = eval(ctx, v >> car);
       cons_print cp(std::cout);
       cp(evalled);
       std::cout << "\n";
@@ -185,51 +201,21 @@ namespace lisp {
     variant evaluate::operator()(context_ptr ctx, variant v)
     {
       SHOW;
-      cons_ptr arg = boost::get<cons_ptr>(v);
-      variant evalled = eval(ctx, arg->car);
-      // now we've got what to evaulate, ie fetch fncall from variable
+      variant evalled = eval(ctx, v >> car);
+      // now we've got what to evaulate, e.g. fetch fncall from variable
       evalled = eval(ctx, evalled);
       return evalled;
     }
 
     variant progn::operator()(context_ptr ctx, variant v)
     {
-      cons_ptr l = boost::get<cons_ptr>(v);
       variant last;
-      while (l)
+      while (! is_nil(v))
 	{
-	  last = eval(ctx, l->car);
-	  l = boost::get<cons_ptr>(l->cdr);
+	  last = eval(ctx, v >> car);
+	  v = v >> cdr;
 	}
       return last;
-    }
-
-    variant divides::operator()(context_ptr c, variant v)
-    {
-      SHOW;
-
-      // the 
-      cons_ptr l = boost::get<cons_ptr>(v);
-      while(l)
-	{
-	  l->car = eval(c, l->car);
-	  l = boost::get<cons_ptr>(l->cdr);
-	}
-
-      double r = boost::get<double>(l->car);
-      l = boost::get<cons_ptr>(l->cdr);
-
-      if (! l)
-	return 1.0 / r;
-
-      l = boost::get<cons_ptr>(v);
-      while(l)
-	{
-	  double n = boost::get<double>(l->car);
-	  r /= n;
-	  l = boost::get<cons_ptr>(l->cdr);
-	}
-      return r;
     }
 
     template <typename Signature>
@@ -245,7 +231,7 @@ namespace lisp {
 
       variant operator()(context_ptr c, const variant v)
       {
-	cons_ptr l = boost::get<cons_ptr>(v);
+	cons_ptr l = get<cons_ptr>(v);
 	//	std::cout << "old scope:";
 	//	c->dump(std::cout);
 	context_ptr scope = c->scope();
@@ -257,7 +243,7 @@ namespace lisp {
 	    variant evalled = eval(c, l->car);
 	    //	    std::cout << args[u] << "\n";
 	    scope->put(args[u], evalled);
-	    l = boost::get<cons_ptr>(l->cdr);
+	    l = get<cons_ptr>(l->cdr);
 	  }
 	//	scope->dump(std::cout);
 	
@@ -279,18 +265,18 @@ namespace lisp {
     variant defun::operator()(context_ptr c, variant v)
     {
       SHOW;
-      //      c->dump(std::cout);
-      cons_ptr top = boost::get<cons_ptr>(v);
-      symbol s = boost::get<symbol>(top->car);
-      cons_ptr arglist = boost::get<cons_ptr>(top->cdr);
-      cons_ptr l = boost::get<cons_ptr>(arglist->car);
+
+      cons_ptr top = get<cons_ptr>(v);
+      symbol s = get<symbol>(top->car);
+      cons_ptr arglist = get<cons_ptr>(top->cdr);
+      cons_ptr l = get<cons_ptr>(arglist->car);
       std::vector<symbol> args;
       while (l)
 	{
-	  symbol s = boost::get<symbol>(l->car);
+	  symbol s = get<symbol>(l->car);
 	  args.push_back(s);
 	  //	  std::cout << "ARG: " << s << "\n";
-	  l = boost::get<cons_ptr>(l->cdr);
+	  l = get<cons_ptr>(l->cdr);
 	}
       dispatch<void> dispatcher(arglist->cdr);
       dispatcher.args = args;

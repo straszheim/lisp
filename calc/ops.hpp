@@ -20,6 +20,7 @@ namespace lisp {
     OP_FWD_DECL(equal);
     OP_FWD_DECL(if_clause);
     OP_FWD_DECL(setf);
+    OP_FWD_DECL(format);
 
     template <typename Op>
     struct op 

@@ -24,8 +24,7 @@ namespace lisp {
 			 std::string,
 			 symbol,
 			 boost::recursive_wrapper<function>,
-			 cons_ptr>
-  variant;
+			 cons_ptr> variant;
 
   struct function 
   { 
@@ -95,6 +94,43 @@ namespace lisp {
   
   extern const variant nil;
   extern const variant t;
+
+  //
+  //  some syntactic sugar for dealing with variants that are conses
+  //
+  namespace tag {
+    struct thunk
+    { 
+      variant& value;
+      thunk (variant& _value) : value(_value) { };
+      thunk (thunk& rhs) : value(rhs.value) { };
+
+      template <typename T>
+      T& as() 
+      { 
+	return boost::get<T>(value);
+      }
+      operator variant&() { return value; }
+    };
+    struct car {};
+    struct cdr {};
+  }
+  
+
+
+  const static tag::car car = {};
+  const static tag::cdr cdr = {};
+
+  inline variant& operator>>(variant& v, tag::car)
+  {
+    return boost::get<cons_ptr>(v)->car;
+  };
+
+  inline variant& operator>>(variant& v, tag::cdr)
+  {
+    return boost::get<cons_ptr>(v)->cdr;
+  };
+
 }
 
 #endif
