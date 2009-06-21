@@ -99,7 +99,8 @@ namespace lisp {
 
     variant backquote::operator()(context_ptr c, variant v)
     {
-      return lisp::backquote(c, v);
+      variant result = lisp::backquote(c, v);
+      return result >> car;
     }
 
     variant list::operator()(context_ptr c, variant v)

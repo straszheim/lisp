@@ -77,6 +77,11 @@
 (test '(equal (factorial 4) 24))
 (test '(equal (factorial 5) 120))
 
+
+(test '(equal 1 `,1))
+(test '(equal '(1 2) `(1 ,(+ 1 1))))
+
+
 (print "passes:")
 (print passes)
 (print "failures:")
