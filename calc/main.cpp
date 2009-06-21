@@ -34,6 +34,7 @@ void add_builtins()
   global->put("-", lisp::function(lisp::ops::minus()));
   global->put("/", lisp::function(lisp::ops::divides()));
   global->put("quote", lisp::function(lisp::ops::quote()));
+  global->put("backtick", lisp::function(lisp::ops::quote()));
   global->put("cons", lisp::function(lisp::ops::cons()));
   global->put("list", lisp::function(lisp::ops::list()));
   global->put("defvar", lisp::function(lisp::ops::defvar()));
@@ -90,8 +91,8 @@ int repl(bool debug, std::istream& is)
 		{
 		  std::cout << "\nparsed as> ";
 		  dbg(result);
-		  lisp::dot d("parsed", i);
-		  d(result);
+		  //		  lisp::dot d("parsed", i);
+		  //		  d(result);
 
 		  std::cout << "\nparsed as> ";
 		  repr(result);

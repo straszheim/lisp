@@ -180,6 +180,7 @@ namespace lisp
     using boost::phoenix::function;
     function<lisp::process> p;
     function<sugar> backtick(sugar("backtick"));
+    function<sugar> quote(sugar("quote"));
   }
 
   template <typename Iterator>
@@ -197,9 +198,8 @@ namespace lisp
     sexpr =
       atom                           [ _val = _1 ] 
       | nil                          [ _val = val(::lisp::nil) ]
-      | ( char_("'") >> sexpr )      [ _val = p(_1, _2) ]
+      | "'" >> sexpr                 [ _val = quote(_1)    ]
       | "`" >> sexpr                 [ _val = backtick(_1) ]
-      | quote                        [ _val = _1 ]
       | cons                         [ _val = _1 ]
       | ( char_("(") >> ( +sexpr )   [ _val = p(_1) ] 
           > char_(")"))
@@ -230,10 +230,6 @@ namespace lisp
     nil = 
       (char_("(") >> char_(")"));
 
-    quote = 
-      (char_("(") >> "quote" >> sexpr >> char_(")"))   [ _val = p(_1, _2) ]
-      ;
-
     cons = 
       (char_("(") >> sexpr >> char_(".") >> sexpr >> char_(")"))   [ _val = p(_2, _4) ]
       ;
@@ -249,7 +245,6 @@ namespace lisp
 	atom.name("atom");
 	sexpr.name("sexpr");
 	identifier.name("identifier");
-	quote.name("quote");
 	cons.name("cons");
 	quoted_string.name("quoted_string");
 	start.name("start");
@@ -259,7 +254,6 @@ namespace lisp
 	debug(atom);
 	debug(sexpr);
 	debug(identifier);
-	debug(quote);
 	debug(cons);
 	debug(quoted_string);
 	debug(start);

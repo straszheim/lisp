@@ -9,8 +9,8 @@
 #include <iostream>
 #include <vector>
 
-// #define SHOW std::cerr << __PRETTY_FUNCTION__ << "\n"
-#define SHOW 
+#define SHOW std::cerr << __PRETTY_FUNCTION__ << "\n"
+//#define SHOW 
 
 using boost::get;
 
@@ -222,6 +222,7 @@ namespace lisp {
 
     variant progn::operator()(context_ptr ctx, variant v)
     {
+      SHOW;
       variant last;
       while (! is_nil(v))
 	{
@@ -244,6 +245,7 @@ namespace lisp {
 
       variant operator()(context_ptr c, const variant v)
       {
+	SHOW;
 	cons_ptr l = get<cons_ptr>(v);
 	//	std::cout << "old scope:";
 	//	c->dump(std::cout);
