@@ -176,7 +176,7 @@ namespace lisp
       ;
 
     quoted_string = 
-      lexeme[ '"' >> +escaped_char >> '"' ]
+      lexeme[ '"' >> *escaped_char >> '"' ]
       [ _val = construct<std::string>(&front(_1), size(_1)) ]
       ;
 

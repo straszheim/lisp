@@ -103,28 +103,15 @@ namespace lisp {
   extern const variant nil;
   extern const variant t;
 
+
   //
   //  some syntactic sugar for dealing with variants that are conses
   //
-  namespace tag {
-    struct thunk
-    { 
-      variant& value;
-      thunk (variant& _value) : value(_value) { };
-      thunk (thunk& rhs) : value(rhs.value) { };
-
-      template <typename T>
-      T& as() 
-      { 
-	return boost::get<T>(value);
-      }
-      operator variant&() { return value; }
-    };
+  namespace tag 
+  {
     struct car {};
     struct cdr {};
   }
-  
-
 
   const static tag::car car = {};
   const static tag::cdr cdr = {};
