@@ -22,12 +22,14 @@ namespace lisp {
     void operator()(const special<comma_at_>& s) const;
     void operator()(const special<comma_>& s) const;
 
+  private:
+
+    template <typename T>
+    void 
+    visit(T const& t) const;
   };
 
   void print(std::ostream&, const variant&);
-
-  void flam();
-
 }
 
 #endif

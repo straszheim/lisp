@@ -30,6 +30,13 @@ namespace lisp
     variant operator()(const special<comma_at_>& s);
     variant operator()(const special<comma_>& s);
 
+    template <typename T>
+    variant visit(T const& t)
+    {
+      return boost::apply_visitor(*this, t);
+    }
+
+
   };
 
   variant backquote(context_ptr& ctx, const variant& v);

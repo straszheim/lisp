@@ -8,6 +8,14 @@ namespace lisp {
     : os(_os)
   { }
 
+  template <typename T>
+  void
+  cons_print::visit(T const& t) const
+  {
+    boost::apply_visitor(*this, t);
+  }
+
+
   void cons_print::operator()(double d) const
   {
     SHOW;
@@ -35,7 +43,7 @@ namespace lisp {
 	return;
       }
     os << "(";
-    boost::apply_visitor(*this, p->car);
+    visit(p->car);
     cons_ptr k = p;
 
     while(! is_nil(k->cdr))
@@ -44,12 +52,12 @@ namespace lisp {
 	if (is_ptr(k->cdr))
 	  {
 	    k = boost::get<cons_ptr>(k->cdr);
-	    boost::apply_visitor(*this, k->car);
+	    visit(k->car);
 	  }
 	else
 	  {
 	    os << ". ";
-	    boost::apply_visitor(*this, k->cdr);
+	    visit(k->cdr);
 	    break;
 	  }
       }
@@ -65,23 +73,23 @@ namespace lisp {
   void cons_print::operator()(const special<backquoted_>& s) const
   {
     os << "`";
-    boost::apply_visitor(*this, s.v);
+    visit(s.v);
   }
 
   void cons_print::operator()(const special<quoted_>& s) const
   {
     os << "'";
-    boost::apply_visitor(*this, s.v);
+    visit(s.v);
   }
   void cons_print::operator()(const special<comma_at_>& s) const
   {
     os << ",@";
-    boost::apply_visitor(*this, s.v);
+    visit(s.v);
   }
   void cons_print::operator()(const special<comma_>& s) const
   {
     os << ",";
-    boost::apply_visitor(*this, s.v);
+    visit(s.v);
   }
 
   void print(std::ostream& os, const variant& v)

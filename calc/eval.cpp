@@ -15,12 +15,6 @@ namespace lisp
   
   eval_visitor::eval_visitor(context_ptr _ctx) : ctx(_ctx) { }
 
-  variant eval_visitor::operator()(const variant& v)
-  {
-    SHOW;
-    return boost::apply_visitor(*this, v);
-  }
-    
   variant eval_visitor::operator()(double d)
   {
     SHOW;
@@ -61,8 +55,7 @@ namespace lisp
 
   variant eval_visitor::operator()(const special<backquoted_>& s)
   {
-    backquote_visitor bv(ctx);
-    return boost::apply_visitor(bv, s.v);
+    return lisp::backquote(ctx, s.v);
   }
 
   variant eval_visitor::operator()(const special<quoted_>& s)

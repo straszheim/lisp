@@ -10,12 +10,9 @@ namespace lisp
   {
     typedef variant result_type;
 
-    context_ptr ctx;
     eval_visitor(context_ptr _ctx);
 
     variant operator()(double d);
-    
-    variant operator()(const variant& v);
     
     variant operator()(const std::string& s);
     
@@ -30,7 +27,15 @@ namespace lisp
     variant operator()(const special<comma_at_>& s);
     variant operator()(const special<comma_>& s);
 
-    bool backquote;
+  private:
+
+    context_ptr ctx;
+
+    template <typename T>
+    variant visit(T const& t)
+    {
+      return boost::apply_visitor(*this, t);
+    }
 
   };
 

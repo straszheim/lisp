@@ -16,13 +16,6 @@ namespace lisp
   
   backquote_visitor::backquote_visitor(context_ptr _ctx) : ctx(_ctx) { }
 
-  /*
-  variant backquote_visitor::operator()(const variant& v)
-  {
-    SHOW;
-    return boost::apply_visitor(*this, v);
-  }
-  */
   variant backquote_visitor::operator()(double d)
   {
     SHOW;
@@ -55,8 +48,8 @@ namespace lisp
     if (is_nil(p))
       return p;
 
-    variant car_result = boost::apply_visitor(*this, p->car);
-    variant cdr_result = boost::apply_visitor(*this, p->cdr);
+    variant car_result = visit(p->car);
+    variant cdr_result = visit(p->cdr);
 
     if (boost::get<special<comma_at_> >(&(p->car)))
       {
@@ -69,7 +62,7 @@ namespace lisp
 
   variant backquote_visitor::operator()(const special<backquoted_>& s)
   {
-    return boost::apply_visitor(*this, s.v);
+    return visit(s.v);
   }
 
   variant backquote_visitor::operator()(const special<quoted_>& s)
