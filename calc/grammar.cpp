@@ -151,14 +151,31 @@ namespace lisp
       
     using namespace boost::phoenix;
 
+    backquote_depth = 0;
+
     sexpr =
       atom                           [ _val = _1               ] 
       | "'" >> sexpr                 [ _val = quote(_1)        ]
-      | "`" >> sexpr                 [ _val = backquote(_1)    ]
-      | ",@" >> sexpr                [ _val = comma_at(_1)     ]
-      | "," >> sexpr                 [ _val = comma(_1)        ]
+      | "`" >> sexpr                 [
+				      _val = backquote(_1),
+				      ref(backquote_depth)++
+				      ]
+      | ",@" >> sexpr                [ _val = comma_at(_1),
+				       if_(ref(backquote_depth) == 0u)
+				       [
+					throw_(std::runtime_error("comma outside of backquote"))
+					],
+				       ref(backquote_depth)--
+				       ]
+      | "," >> sexpr                 [ _val = comma(_1),  
+				       if_(ref(backquote_depth) == 0u)
+				       [
+					throw_(std::runtime_error("comma outside of backquote"))
+					],
+				       ref(backquote_depth)--
+				       ]
       | cons                         [ _val = _1               ]
-      | ( char_("(") >> ( +sexpr )   [ _val = make_list(_1)    ] 
+      | ( char_("(") >> ( +sexpr )   [ _val = make_list(_1)    ]
           > char_(")"))
       ;
       

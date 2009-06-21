@@ -63,6 +63,8 @@ namespace lisp
     start, atom, sexpr, identifier, nil, cons, quoted_string;
 
     qi::rule<Iterator, char()> escaped_char;
+
+    unsigned backquote_depth;
   };
 
   typedef std::string::const_iterator iterator_type;
