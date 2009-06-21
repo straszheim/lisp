@@ -34,50 +34,28 @@ namespace lisp
   namespace phoenix = boost::phoenix;
   namespace ascii = boost::spirit::ascii;
 
-  struct process
+  struct variant_maker
   {
-    template <typename T = void, typename U = void, typename V = void>
+    template <typename T0 = void, typename T1 = void, typename T2 = void, typename T3 = void>
     struct result
     {
       typedef variant type;
     };
+  };
 
-    variant operator()(double d) const
-    {
-      return d;
-    }
-    
+  struct make_symbol_actor : variant_maker
+  {
     variant operator()(boost::iterator_range<std::string::const_iterator> r) const
     {
       return symbol(std::string(r.begin(), r.end()));
     }
+  };
+  namespace {
+    phoenix::function<make_symbol_actor> make_symbol;
+  }
 
-    template <typename T>
-    variant operator()(const T& s) const
-    {
-      assert(0);
-      // something fell through
-      return std::string("oh noes");
-    }
-
-    template <typename T, typename U>
-    variant operator()(const T& s, const U& t) const
-    {
-      assert(0);
-      // something fell through
-      return std::string("oh noes");
-    }
-
-    variant operator()(const std::vector<char>& v) const
-    {
-      return std::string(v.data(), v.data() + v.size());
-    }
-
-    variant operator()(boost::iterator_range<std::string::const_iterator> r, double) const
-    {
-      return std::string(r.begin(), r.end());
-    }
-
+  struct make_list_actor : variant_maker
+  {
     variant operator()(const std::vector<variant>& v) const
     {
       cons_ptr head = new cons;
@@ -96,23 +74,15 @@ namespace lisp
 	}
       return head;
     }
-
   };
-
-  namespace {
-    using boost::phoenix::function;
-    function<lisp::process> p;
+  namespace 
+  {
+    phoenix::function<make_list_actor> make_list;
   }
 
-
   // cons
-  struct make_cons_actor
+  struct make_cons_actor : variant_maker
   {
-    template <typename T0 = void, typename T1 = void>
-    struct result {
-      typedef variant type;
-    };
-
     variant operator()(const variant& car, const variant& cdr) const
     {
       //std::cout << __PRETTY_FUNCTION__ << "\n";
@@ -122,8 +92,7 @@ namespace lisp
 
   namespace 
   {
-    using boost::phoenix::function;
-    function<make_cons_actor> make_cons;
+    phoenix::function<make_cons_actor> make_cons;
   }
 
   
@@ -131,15 +100,9 @@ namespace lisp
   //
   //  handles sugary constructs like comma, comma_at, backtick, quote
   //
-  struct sugar_cons 
+  struct sugar_cons : variant_maker
   {
     std::string name;
-
-    template <typename T=void, typename U=void, typename V=void>
-    struct result
-    {
-      typedef variant type;
-    };
 
     sugar_cons(const std::string& _name) : name(_name) { }
     sugar_cons(const sugar_cons& rhs) : name(rhs.name) { }
@@ -153,11 +116,10 @@ namespace lisp
   };
 
   namespace {
-    using boost::phoenix::function;
-    function<sugar_cons> quote(sugar_cons("quote"));
-    function<sugar_cons> backtick(sugar_cons("backtick"));
-    function<sugar_cons> comma_at(sugar_cons("comma_at"));
-    function<sugar_cons> comma(sugar_cons("comma"));
+    phoenix::function<sugar_cons> quote(sugar_cons("quote"));
+    phoenix::function<sugar_cons> backtick(sugar_cons("backtick"));
+    phoenix::function<sugar_cons> comma_at(sugar_cons("comma_at"));
+    phoenix::function<sugar_cons> comma(sugar_cons("comma"));
   }
 
   template <typename Iterator>
@@ -173,7 +135,10 @@ namespace lisp
       ;
   }
 
-  phoenix::function<error_handler_> const error_handler = error_handler_();
+  namespace {
+    phoenix::function<error_handler_> const error_handler = error_handler_();
+  }
+
 
   template <typename Iterator>
   white_space<Iterator>::white_space() : white_space::base_type(start)
@@ -205,7 +170,7 @@ namespace lisp
       | ",@" >> sexpr                [ _val = comma_at(_1)     ]
       | "," >> sexpr                 [ _val = comma(_1)        ]
       | cons                         [ _val = _1               ]
-      | ( char_("(") >> ( +sexpr )   [ _val = p(_1)            ] 
+      | ( char_("(") >> ( +sexpr )   [ _val = make_list(_1)    ] 
           > char_(")"))
       ;
       
@@ -215,18 +180,19 @@ namespace lisp
          lexeme
          [
             +(alnum | '+' | '-' | '*' | '/')
-	  ]
-      ][_val = p(_1)];
+         ]
+      ][_val = make_symbol(_1)];
 
     escaped_char %= ('\\' >> char_) | (char_ - '"')
       ;
 
     quoted_string = 
-      lexeme['"' >> +escaped_char >> '"'][ _val = p(_1) ]
+      lexeme[ '"' >> +escaped_char >> '"' ]
+      [ _val = construct<std::string>(&front(_1)) ]
       ;
 
     atom %=
-      nil
+        nil
       | double_     
       | identifier  
       | quoted_string
