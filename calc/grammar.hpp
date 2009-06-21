@@ -60,7 +60,7 @@ namespace lisp
     interpreter(bool _show_debug);
     
     qi::rule<Iterator, variant(), white_space<Iterator> > 
-    start, atom, sexpr, nil, identifier, /*quote, */cons, quoted_string;
+    start, atom, sexpr, identifier, nil, cons, quoted_string;
 
     qi::rule<Iterator, char()> escaped_char;
   };

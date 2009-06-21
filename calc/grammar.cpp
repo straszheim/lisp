@@ -97,48 +97,52 @@ namespace lisp
       return head;
     }
 
-#if 0
-    // currently only used for quote
-    variant operator()(char c, const variant& v) const
-    {
-      // if (c != '\'')
-      //   throw std::runtime_error("we shouldn't ever see this");
-      //std::cout << __PRETTY_FUNCTION__ << "\n";
-      cons_ptr head = new cons;
-      cons_ptr tail = new cons;
-      tail->car = v;
-      
-      head->car = symbol("quote");
-      head->cdr = tail;
-      return head;
-    }
-#endif
+  };
 
-    // cons
-    variant operator()(const variant& l, const variant& r) const
+  namespace {
+    using boost::phoenix::function;
+    function<lisp::process> p;
+  }
+
+
+  // cons
+  struct make_cons_actor
+  {
+    template <typename T0 = void, typename T1 = void>
+    struct result {
+      typedef variant type;
+    };
+
+    variant operator()(const variant& car, const variant& cdr) const
     {
       //std::cout << __PRETTY_FUNCTION__ << "\n";
-      cons_ptr c = new cons;
-      
-      c->car = l;
-      c->cdr = r;
-
-      return c;
+      return cons_ptr(new cons(car, cdr));
     }
   };
 
-  struct sugar 
+  namespace 
+  {
+    using boost::phoenix::function;
+    function<make_cons_actor> make_cons;
+  }
+
+  
+
+  //
+  //  handles sugary constructs like comma, comma_at, backtick, quote
+  //
+  struct sugar_cons 
   {
     std::string name;
 
-    template <typename T>
+    template <typename T=void, typename U=void, typename V=void>
     struct result
     {
       typedef variant type;
     };
 
-    sugar(const std::string& _name) : name(_name) { }
-    sugar(const sugar& rhs) : name(rhs.name) { }
+    sugar_cons(const std::string& _name) : name(_name) { }
+    sugar_cons(const sugar_cons& rhs) : name(rhs.name) { }
 
     variant operator()(const variant& v) const
     {
@@ -148,6 +152,13 @@ namespace lisp
     }
   };
 
+  namespace {
+    using boost::phoenix::function;
+    function<sugar_cons> quote(sugar_cons("quote"));
+    function<sugar_cons> backtick(sugar_cons("backtick"));
+    function<sugar_cons> comma_at(sugar_cons("comma_at"));
+    function<sugar_cons> comma(sugar_cons("comma"));
+  }
 
   template <typename Iterator>
   void error_handler_::operator()(info const& what, Iterator err_pos, Iterator last) const
@@ -175,15 +186,6 @@ namespace lisp
       ;
   }
 
-  namespace {
-    using boost::phoenix::function;
-    function<lisp::process> p;
-    function<sugar> quote(sugar("quote"));
-    function<sugar> backtick(sugar("backtick"));
-    function<sugar> comma_at(sugar("comma_at"));
-    function<sugar> comma(sugar("comma"));
-  }
-
   template <typename Iterator>
   interpreter<Iterator>::interpreter(bool _show_debug) : interpreter::base_type(sexpr), show_debug(_show_debug)
   {
@@ -195,10 +197,9 @@ namespace lisp
     using boost::spirit::raw;
       
     using namespace boost::phoenix;
-      
+
     sexpr =
       atom                           [ _val = _1               ] 
-      | nil                          [ _val = val(::lisp::nil) ]
       | "'" >> sexpr                 [ _val = quote(_1)        ]
       | "`" >> sexpr                 [ _val = backtick(_1)     ]
       | ",@" >> sexpr                [ _val = comma_at(_1)     ]
@@ -211,11 +212,11 @@ namespace lisp
     identifier = 
       raw
       [
-       lexeme
-       [
-	+(alnum | '+' | '-' | '*' | '/')
-	]
-       ][_val = p(_1)];
+         lexeme
+         [
+            +(alnum | '+' | '-' | '*' | '/')
+	  ]
+      ][_val = p(_1)];
 
     escaped_char %= ('\\' >> char_) | (char_ - '"')
       ;
@@ -225,16 +226,17 @@ namespace lisp
       ;
 
     atom %=
-      double_     
+      nil
+      | double_     
       | identifier  
       | quoted_string
       ;
       
     nil = 
-      (char_("(") >> char_(")"));
+      ((char_("(") >> char_(")")) | "NIL" | "nil") [ _val = val(::lisp::nil) ];
 
     cons = 
-      (char_("(") >> sexpr >> char_(".") >> sexpr >> char_(")"))   [ _val = p(_2, _4) ]
+      (char_("(") >> sexpr >> char_(".") >> sexpr >> char_(")"))   [ _val = make_cons(_2, _4) ]
       ;
 
     //on_error<fail>(sexpr, error_handler(_4, _3, _2));
