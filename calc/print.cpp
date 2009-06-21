@@ -1,9 +1,6 @@
 #include <iostream>
 #include "print.hpp"
-
-#define SHOW std::cerr << __PRETTY_FUNCTION__ << "\n"
-
-//#define SHOW
+#include "config.hpp"
 
 namespace lisp {
 

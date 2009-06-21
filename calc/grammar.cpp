@@ -97,6 +97,7 @@ namespace lisp
       return head;
     }
 
+#if 0
     // currently only used for quote
     variant operator()(char c, const variant& v) const
     {
@@ -111,6 +112,7 @@ namespace lisp
       head->cdr = tail;
       return head;
     }
+#endif
 
     // cons
     variant operator()(const variant& l, const variant& r) const
@@ -140,9 +142,6 @@ namespace lisp
 
     variant operator()(const variant& v) const
     {
-      std::cout << "BANG\n";
-      cons_print cp(std::cout);
-      cp(v);
       cons_ptr tail = new cons(v);
       cons_ptr head = new cons(symbol(name), tail);
       return head;
@@ -179,8 +178,10 @@ namespace lisp
   namespace {
     using boost::phoenix::function;
     function<lisp::process> p;
-    function<sugar> backtick(sugar("backtick"));
     function<sugar> quote(sugar("quote"));
+    function<sugar> backtick(sugar("backtick"));
+    function<sugar> comma_at(sugar("comma_at"));
+    function<sugar> comma(sugar("comma"));
   }
 
   template <typename Iterator>
@@ -196,12 +197,14 @@ namespace lisp
     using namespace boost::phoenix;
       
     sexpr =
-      atom                           [ _val = _1 ] 
+      atom                           [ _val = _1               ] 
       | nil                          [ _val = val(::lisp::nil) ]
-      | "'" >> sexpr                 [ _val = quote(_1)    ]
-      | "`" >> sexpr                 [ _val = backtick(_1) ]
-      | cons                         [ _val = _1 ]
-      | ( char_("(") >> ( +sexpr )   [ _val = p(_1) ] 
+      | "'" >> sexpr                 [ _val = quote(_1)        ]
+      | "`" >> sexpr                 [ _val = backtick(_1)     ]
+      | ",@" >> sexpr                [ _val = comma_at(_1)     ]
+      | "," >> sexpr                 [ _val = comma(_1)        ]
+      | cons                         [ _val = _1               ]
+      | ( char_("(") >> ( +sexpr )   [ _val = p(_1)            ] 
           > char_(")"))
       ;
       

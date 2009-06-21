@@ -1,4 +1,5 @@
 #include "dot.hpp"
+#include "config.hpp"
 
 #include <boost/format.hpp>
 
@@ -6,9 +7,6 @@
 #include <fstream>
 
 
-//#define SHOW std::cerr << __PRETTY_FUNCTION__ << "\n"
-
-#define SHOW
 
 namespace lisp 
 {

@@ -5,12 +5,10 @@
 #include "print.hpp"
 #include "dot.hpp"
 #include "debug.hpp"
+#include "config.hpp"
 
 #include <iostream>
 #include <vector>
-
-#define SHOW std::cerr << __PRETTY_FUNCTION__ << "\n"
-//#define SHOW 
 
 using boost::get;
 
@@ -49,7 +47,7 @@ namespace lisp {
       double d = get<double>(args[0]);
       if (args.size() == 1)
 	return 1.0 / d;
-      for (int i=1; i<args.size(); i++)
+      for (unsigned i=1; i<args.size(); i++)
 	d /= get<double>(args[i]);
 
       return d;
@@ -69,7 +67,7 @@ namespace lisp {
       double d = get<double>(args[0]);
       if (args.size() == 1)
 	return -d;
-      for (int i=1; i<args.size(); i++)
+      for (unsigned i=1; i<args.size(); i++)
 	d -= get<double>(args[i]);
 
       return d;

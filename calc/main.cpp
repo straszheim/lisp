@@ -202,8 +202,8 @@ main(int argc, char** argv)
 
   std::list<std::string> args(argv+1, argv+argc);
 
-  bool debug;
-  if(args.front() == "-d")
+  bool debug = false;
+  if(args.size() > 0 && args.front() == "-d")
     {
       debug = true;
       args.pop_front();
