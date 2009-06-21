@@ -125,6 +125,30 @@ namespace lisp
     }
   };
 
+  struct sugar 
+  {
+    std::string name;
+
+    template <typename T>
+    struct result
+    {
+      typedef variant type;
+    };
+
+    sugar(const std::string& _name) : name(_name) { }
+    sugar(const sugar& rhs) : name(rhs.name) { }
+
+    variant operator()(const variant& v) const
+    {
+      std::cout << "BANG\n";
+      cons_print cp(std::cout);
+      cp(v);
+      cons_ptr tail = new cons(v);
+      cons_ptr head = new cons(symbol(name), tail);
+      return head;
+    }
+  };
+
 
   template <typename Iterator>
   void error_handler_::operator()(info const& what, Iterator err_pos, Iterator last) const
@@ -153,7 +177,9 @@ namespace lisp
   }
 
   namespace {
-    boost::phoenix::function<lisp::process> p;
+    using boost::phoenix::function;
+    function<lisp::process> p;
+    function<sugar> backtick(sugar("backtick"));
   }
 
   template <typename Iterator>
@@ -169,9 +195,10 @@ namespace lisp
     using namespace boost::phoenix;
       
     sexpr =
-      atom                         [ _val = _1 ] 
+      atom                           [ _val = _1 ] 
       | nil                          [ _val = val(::lisp::nil) ]
       | ( char_("'") >> sexpr )      [ _val = p(_1, _2) ]
+      | "`" >> sexpr                 [ _val = backtick(_1) ]
       | quote                        [ _val = _1 ]
       | cons                         [ _val = _1 ]
       | ( char_("(") >> ( +sexpr )   [ _val = p(_1) ] 

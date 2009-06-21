@@ -57,10 +57,14 @@ namespace lisp {
 	     cdr(cons_ptr(0))
     { }
 
-    template <typename T>
-    cons(T t) : count(0),
-		car(t),
-		cdr(cons_ptr(0))
+    cons(const variant& v) : count(0),
+			     car(v),
+			     cdr(cons_ptr(0))
+    { }
+
+    cons(const variant& v, const variant& w) : count(0),
+					       car(v),
+					       cdr(w)
     { }
 
     ~cons() { }
