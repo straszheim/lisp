@@ -5,7 +5,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(lisp 
   main.cpp ops.cpp context.cpp eval.cpp types.cpp
   debug.cpp print.cpp dot.cpp
-  grammar.cpp
+  grammar.cpp backquote.cpp
   )
 target_link_libraries(lisp stdc++)
 

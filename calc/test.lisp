@@ -52,9 +52,6 @@
 (test '(equal (- 2 1) 1))
 (test '(equal (- 100 1) 99))
 
-
-(test '(equal (i 2) (+ 99 2)))
-
 ;
 ;  unary divides is reciprocal
 ;
@@ -79,8 +76,6 @@
 (test '(equal (factorial 3) 6))
 (test '(equal (factorial 4) 24))
 (test '(equal (factorial 5) 120))
-
-
 
 (print "passes:")
 (print passes)

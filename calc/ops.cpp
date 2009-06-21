@@ -1,3 +1,4 @@
+#include "config.hpp"
 #include "types.hpp"
 #include "ops.hpp"
 #include "context.hpp"
@@ -5,7 +6,7 @@
 #include "print.hpp"
 #include "dot.hpp"
 #include "debug.hpp"
-#include "config.hpp"
+#include "backquote.hpp"
 
 #include <iostream>
 #include <vector>
@@ -94,6 +95,11 @@ namespace lisp {
       if (! is_nil(v >> cdr))
 	throw std::runtime_error("wrong number of args to quote");
       return v >> car;
+    }
+
+    variant backquote::operator()(context_ptr c, variant v)
+    {
+      return lisp::backquote(c, v);
     }
 
     variant list::operator()(context_ptr c, variant v)

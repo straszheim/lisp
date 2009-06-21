@@ -34,7 +34,7 @@ void add_builtins()
   global->put("-", lisp::function(lisp::ops::minus()));
   global->put("/", lisp::function(lisp::ops::divides()));
   global->put("quote", lisp::function(lisp::ops::quote()));
-  global->put("backtick", lisp::function(lisp::ops::quote()));
+  global->put("backquote", lisp::function(lisp::ops::backquote()));
   global->put("cons", lisp::function(lisp::ops::cons()));
   global->put("list", lisp::function(lisp::ops::list()));
   global->put("defvar", lisp::function(lisp::ops::defvar()));

@@ -14,6 +14,7 @@ namespace lisp {
     OP_FWD_DECL(list);
     OP_FWD_DECL(defvar);
     OP_FWD_DECL(quote);
+    OP_FWD_DECL(backquote);
     OP_FWD_DECL(print);
     OP_FWD_DECL(evaluate);
     OP_FWD_DECL(progn);
