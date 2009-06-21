@@ -22,6 +22,7 @@ namespace lisp {
     void* operator()(const cons_ptr& p);
     void* operator()(const function& f);
     void* operator()(const variant& v);
+    template <typename T> void* operator()(const special<T>& s) { return 0; }
 
   };
 

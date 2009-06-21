@@ -24,6 +24,14 @@ namespace lisp
     variant operator()(const function& p);
 
     variant operator()(const cons_ptr& p);
+
+    variant operator()(const special<backquoted_>& s);
+    variant operator()(const special<quoted_>& s);
+    variant operator()(const special<comma_at_>& s);
+    variant operator()(const special<comma_>& s);
+
+    bool backquote;
+
   };
 
   variant eval(context_ptr& ctx, const variant& v);

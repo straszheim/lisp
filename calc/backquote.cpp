@@ -16,12 +16,13 @@ namespace lisp
   
   backquote_visitor::backquote_visitor(context_ptr _ctx) : ctx(_ctx) { }
 
+  /*
   variant backquote_visitor::operator()(const variant& v)
   {
     SHOW;
     return boost::apply_visitor(*this, v);
   }
-    
+  */
   variant backquote_visitor::operator()(double d)
   {
     SHOW;
@@ -51,16 +52,41 @@ namespace lisp
   variant backquote_visitor::operator()(const cons_ptr& p)
   {
     SHOW;
-    if (p == boost::get<cons_ptr>(nil))
+    if (is_nil(p))
       return p;
-    //    ctx->dump(std::cout);
-    symbol* sym = boost::get<symbol>(&(p->car));
-    if (sym && *sym == "comma")
+
+    variant car_result = boost::apply_visitor(*this, p->car);
+    variant cdr_result = boost::apply_visitor(*this, p->cdr);
+
+    if (boost::get<special<comma_at_> >(&(p->car)))
       {
-	return eval(ctx, p->cdr >> car);
+	last(car_result)->cdr = cdr_result;
+	return car_result;
       }
     else
-      return cons_ptr(new cons(boost::apply_visitor(*this, p->car),
-			       boost::apply_visitor(*this, p->cdr)));
+      return cons_ptr(new cons(car_result, cdr_result));
   }
+
+  variant backquote_visitor::operator()(const special<backquoted_>& s)
+  {
+    return s.v;
+  }
+
+  variant backquote_visitor::operator()(const special<quoted_>& s)
+  {
+    return s.v;
+  }
+
+  variant backquote_visitor::operator()(const special<comma_at_>& s)
+  {
+    variant result = eval(ctx, s.v);
+    return result;
+  }
+
+  variant backquote_visitor::operator()(const special<comma_>& s)
+  {
+    return eval(ctx, s.v);
+  }
+
+
 }

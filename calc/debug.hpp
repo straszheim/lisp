@@ -19,6 +19,10 @@ namespace lisp {
     void operator()(const cons_ptr p) const;
     void operator()(const function f) const;
     void operator()(const variant v) const;
+    void operator()(const special<backquoted_>& s) const;
+    void operator()(const special<quoted_>& s) const;
+    void operator()(const special<comma_at_>& s) const;
+    void operator()(const special<comma_>& s) const;
   };
   
   std::ostream& operator<<(std::ostream& os, const cons_ptr& cp);

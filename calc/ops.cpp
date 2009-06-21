@@ -210,8 +210,7 @@ namespace lisp {
     {
       SHOW;
       variant evalled = eval(ctx, v >> car);
-      cons_print cp(std::cout);
-      cp(evalled);
+      lisp::print(std::cout, evalled);
       std::cout << "\n";
       return evalled;
     }

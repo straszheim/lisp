@@ -48,6 +48,26 @@ namespace lisp {
     boost::apply_visitor(*this, v);
   }
 
+  void cons_debug::operator()(const special<backquoted_>& s) const
+  {
+    os << "`";
+    boost::apply_visitor(*this, s.v);
+  }
+  void cons_debug::operator()(const special<quoted_>& s) const
+  {
+    os << "'";
+    boost::apply_visitor(*this, s.v);
+  }
+  void cons_debug::operator()(const special<comma_at_>& s) const
+  {
+    os << ",@";
+    boost::apply_visitor(*this, s.v);
+  }
+  void cons_debug::operator()(const special<comma_>& s) const
+  {
+    os << ",";
+    boost::apply_visitor(*this, s.v);
+  }
   
   std::ostream& operator<<(std::ostream& os,
 			   const cons_ptr& cp)

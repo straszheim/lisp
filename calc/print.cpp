@@ -26,7 +26,7 @@ namespace lisp {
     os << s;
   }
     
-  void cons_print::operator()(const cons_ptr p) const
+  void cons_print::operator()(const cons_ptr& p) const
   {
     SHOW;
     if (!p) 
@@ -52,26 +52,58 @@ namespace lisp {
       }
   }
 
-  void cons_print::operator()(const function f) const
+  void cons_print::operator()(const function& f) const
   {
     SHOW;
     os << "function@" << &f;
   }
 
-  void cons_print::operator()(const variant v) const
+  void cons_print::operator()(const special<backquoted_>& s) const
   {
-    SHOW;
-    if (is_ptr(v) && is_nil(v)) 
-      {
-	os << "NIL";
-	return;
-      }
-    bool branch = is_ptr(v);
+    os << "`";
+    bool branch = is_ptr(s.v);
     if (branch)
       os << "(";
-    boost::apply_visitor(*this, v);
+    boost::apply_visitor(*this, s.v);
     if (branch)
       os << ")";
+  }
+
+  void cons_print::operator()(const special<quoted_>& s) const
+  {
+    os << "'";
+    bool branch = is_ptr(s.v);
+    if (branch)
+      os << "(";
+    boost::apply_visitor(*this, s.v);
+    if (branch)
+      os << ")";
+  }
+  void cons_print::operator()(const special<comma_at_>& s) const
+  {
+    os << ",@";
+    bool branch = is_ptr(s.v);
+    if (branch)
+      os << "(";
+    boost::apply_visitor(*this, s.v);
+    if (branch)
+      os << ")";
+  }
+  void cons_print::operator()(const special<comma_>& s) const
+  {
+    os << ",";
+    bool branch = is_ptr(s.v);
+    if (branch)
+      os << "(";
+    boost::apply_visitor(*this, s.v);
+    if (branch)
+      os << ")";
+  }
+
+  void print(std::ostream& os, const variant& v)
+  {
+    cons_print visitor(os);
+    boost::apply_visitor(visitor, v);
   }
 
 }

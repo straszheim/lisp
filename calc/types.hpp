@@ -23,12 +23,35 @@ namespace lisp {
   typedef boost::shared_ptr<context> context_ptr;
 
   struct function;
+  struct quoted_ {};
+  struct backquoted_ {};
+  struct comma_ {};
+  struct comma_at_ {};
+  template <typename T> struct special;
 
   typedef boost::variant<double,
 			 std::string,
 			 symbol,
 			 boost::recursive_wrapper<function>,
-			 cons_ptr> variant;
+			 cons_ptr,
+			 boost::recursive_wrapper<special<quoted_> >, 
+			 boost::recursive_wrapper<special<backquoted_> >, 
+			 boost::recursive_wrapper<special<comma_> >,
+			 boost::recursive_wrapper<special<comma_at_> >
+			 > variant;
+
+  template <typename T>
+  struct special 
+  {
+    special(const variant& _v) : v(_v) { }
+    variant v;
+  };
+
+  template <typename T>
+  inline bool operator==(const special<T>& lhs, const special<T>& rhs)
+  {
+    return lhs.v == rhs.v;
+  }
 
   struct function 
   { 
@@ -89,6 +112,9 @@ namespace lisp {
       delete c;
   }
 
+  extern const variant nil;
+  extern const variant t;
+
   inline bool is_nil(const variant& v)
   {
     const cons_ptr p = boost::get<cons_ptr>(v);
@@ -100,8 +126,15 @@ namespace lisp {
     return boost::get<cons_ptr>(&v);
   }
   
-  extern const variant nil;
-  extern const variant t;
+  inline cons_ptr last(const variant& v)
+  {
+    cons_ptr tmp = boost::get<cons_ptr>(v);
+    while (!is_nil(tmp->cdr))
+      {
+	tmp = boost::get<cons_ptr>(tmp->cdr);
+      }
+    return tmp;
+  }
 
 
   //

@@ -33,8 +33,8 @@ void add_builtins()
   global->put("*", lisp::function(lisp::ops::op<std::multiplies<double> >(1)));
   global->put("-", lisp::function(lisp::ops::minus()));
   global->put("/", lisp::function(lisp::ops::divides()));
-  global->put("quote", lisp::function(lisp::ops::quote()));
-  global->put("backquote", lisp::function(lisp::ops::backquote()));
+  //global->put("quote", lisp::function(lisp::ops::quote()));
+  //global->put("backquote", lisp::function(lisp::ops::backquote()));
   global->put("cons", lisp::function(lisp::ops::cons()));
   global->put("list", lisp::function(lisp::ops::list()));
   global->put("defvar", lisp::function(lisp::ops::defvar()));
@@ -83,19 +83,18 @@ int repl(bool debug, std::istream& is)
 	  else
 	    {
 	      lisp::cons_debug dbg(std::cout);
-	      lisp::cons_print repr(std::cout);
 
 	      cons_ptr c = new cons(result);
 
 	      if (debug)
 		{
 		  std::cout << "\nparsed as> ";
-		  dbg(result);
+		  //		  dbg(result);
 		  //		  lisp::dot d("parsed", i);
 		  //		  d(result);
 
 		  std::cout << "\nparsed as> ";
-		  repr(result);
+		  lisp::print(std::cout, result);
 		  std::cout << "\n";
 		}
 
@@ -109,7 +108,7 @@ int repl(bool debug, std::istream& is)
 		    lisp::dot d("result", i);
 		    d(out);
 		  }
-		repr(out);
+		lisp::print(std::cout, out);
 		std::cout << "\n";
 	      } catch (const std::exception& e) {
 		std::cout << "*** - EVAL exception caught: " << e.what() << "\n";
@@ -151,7 +150,6 @@ int offline(bool debug, std::istream& is)
       bool r = phrase_parse(pos, end, lispi, skipper, result);
 
       lisp::cons_debug dbg(std::cout);
-      lisp::cons_print repr(std::cout);
 
       if (r)
         {
@@ -165,7 +163,7 @@ int offline(bool debug, std::istream& is)
 	      d(result);
 
 	      std::cout << "\nparsed as> ";
-	      repr(result);
+	      lisp::print(std::cout, result);
 	      std::cout << "\n";
 	    }
 

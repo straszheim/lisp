@@ -1,6 +1,7 @@
+#include "config.hpp"
 #include "types.hpp"
 #include "eval.hpp"
-#include "config.hpp"
+#include "backquote.hpp"
 
 #include <iostream>
 
@@ -58,5 +59,27 @@ namespace lisp
 
     return f(ctx, p->cdr);
   }
+
+  variant eval_visitor::operator()(const special<backquoted_>& s)
+  {
+    backquote_visitor bv(ctx);
+    return boost::apply_visitor(bv, s.v);
+  }
+
+  variant eval_visitor::operator()(const special<quoted_>& s)
+  {
+    return s.v;
+  }
+
+  variant eval_visitor::operator()(const special<comma_at_>& s)
+  {
+    return s.v;
+  }
+
+  variant eval_visitor::operator()(const special<comma_>& s)
+  {
+    return s.v;
+  }
+
 
 }

@@ -84,7 +84,7 @@ namespace lisp
   }
 
   
-
+#if 0
   //
   //  handles sugary constructs like comma, comma_at, backquote, quote
   //
@@ -105,9 +105,26 @@ namespace lisp
 
   namespace {
     phoenix::function<sugar_cons> quote(sugar_cons("quote"));
-    phoenix::function<sugar_cons> backquote(sugar_cons("backquote"));
     phoenix::function<sugar_cons> comma_at(sugar_cons("comma_at"));
     phoenix::function<sugar_cons> comma(sugar_cons("comma"));
+  }
+#endif
+  template <typename T>
+  struct sugar_ : variant_maker
+  {
+    variant operator()(const variant& v) const
+    {
+      return special<T>(v);
+    }
+  };
+
+  template struct sugar_<backquoted_>;
+
+  namespace {
+    phoenix::function<sugar_<backquoted_> > backquote;
+    phoenix::function<sugar_<quoted_> > quote;
+    phoenix::function<sugar_<comma_at_> > comma_at;
+    phoenix::function<sugar_<comma_> > comma;
   }
 
   template <typename Iterator>

@@ -69,8 +69,7 @@ namespace lisp
 	     iter++)
 	  {
 	    os << "\t" << iter->first << " ";
-	    cons_print p(os);
-	    p(iter->second);
+	    print(os, iter->second);
 	    os << "\n";
 	  }
 	os << "]\n";
