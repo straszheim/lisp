@@ -83,6 +83,21 @@
 (test '(equal '(1 (2 3) 4) `(1 ,(list (+ 1 1) (+ 1 1 1)) 4)))
 (test '(equal '(1 2 3 4) `(1 ,@(list (+ 1 1) (+ 1 1 1)) 4)))
 
+(test '(equal ``1 1))
+
+(test '(equal 1 1))
+(test '(equal '1 1))
+(test '(equal ''1 ''1))
+(test '(equal '''1 '''1))
+
+(test '(equal 1 1))
+(test '(equal `1 1))
+(test '(equal ``1 ``1))
+(test '(equal ```1 ```1))
+
+(test '(equal (eval '(+ 1 1)) 2))
+(test '(equal (eval '(+ 1 1)) `2))
+
 
 (print "passes:")
 (print passes)

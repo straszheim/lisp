@@ -4,16 +4,19 @@
 #include <boost/function.hpp>
 #include <boost/variant.hpp>
 #include <boost/intrusive_ptr.hpp>
+#include <boost/serialization/strong_typedef.hpp>
 #include <string>
 #include <vector>
 
-namespace lisp {
+namespace lisp 
+{
   struct symbol : std::string
   {
     symbol(const std::string& s) : std::string(s) { }
     symbol(const char* s, unsigned len) : std::string(s, len) { }
     symbol(const std::vector<char>& s) 
-      : std::string(s.data(), s.size()) { }
+      : std::string(s.data(), s.size()) 
+    { }
   };
 
   struct cons;
@@ -27,6 +30,7 @@ namespace lisp {
   struct backquoted_ {};
   struct comma_ {};
   struct comma_at_ {};
+
   template <typename T> struct special;
 
   typedef boost::variant<double,
@@ -40,6 +44,11 @@ namespace lisp {
 			 boost::recursive_wrapper<special<comma_at_> >
 			 > variant;
 
+  extern const variant nil;
+}
+
+namespace lisp 
+{   
   template <typename T>
   struct special 
   {
@@ -123,7 +132,7 @@ namespace lisp {
 
   inline bool is_ptr(const variant& v)
   {
-    return boost::get<cons_ptr>(&v);
+    return v.which() == 4;
   }
   
   inline cons_ptr last(const variant& v)

@@ -215,7 +215,7 @@ namespace lisp
     //on_error<retry>(sexpr, error_handler(_4, _3, _2));
     //on_error<accept>(sexpr, error_handler(_4, _3, _2));
     //on_error<rethrow>(sexpr, error_handler(_4, _3, _2));
-      
+
     if (show_debug)
       {
 	nil.name("nil");

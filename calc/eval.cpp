@@ -5,7 +5,6 @@
 
 #include <iostream>
 
-
 namespace lisp 
 {
   variant eval(context_ptr& ctx, const variant& v)
@@ -38,7 +37,7 @@ namespace lisp
   {
     return ctx->get<variant>(s);
   }
-    
+
   //
   //  don't remember why i put this here
   //

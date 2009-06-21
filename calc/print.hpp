@@ -26,6 +26,8 @@ namespace lisp {
 
   void print(std::ostream&, const variant&);
 
+  void flam();
+
 }
 
 #endif

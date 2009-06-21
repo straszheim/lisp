@@ -69,7 +69,7 @@ namespace lisp
 
   variant backquote_visitor::operator()(const special<backquoted_>& s)
   {
-    return s.v;
+    return boost::apply_visitor(*this, s.v);
   }
 
   variant backquote_visitor::operator()(const special<quoted_>& s)
