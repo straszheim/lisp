@@ -18,8 +18,7 @@ namespace lisp
   variant eval_visitor::operator()(const variant& v)
   {
     SHOW;
-    eval_visitor eprime(ctx);
-    return boost::apply_visitor(eprime, v);
+    return boost::apply_visitor(*this, v);
   }
     
   variant eval_visitor::operator()(double d)

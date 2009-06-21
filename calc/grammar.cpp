@@ -43,17 +43,6 @@ namespace lisp
     };
   };
 
-  struct make_symbol_actor : variant_maker
-  {
-    variant operator()(boost::iterator_range<std::string::const_iterator> r) const
-    {
-      return symbol(std::string(r.begin(), r.end()));
-    }
-  };
-  namespace {
-    phoenix::function<make_symbol_actor> make_symbol;
-  }
-
   struct make_list_actor : variant_maker
   {
     variant operator()(const std::vector<variant>& v) const
@@ -85,7 +74,6 @@ namespace lisp
   {
     variant operator()(const variant& car, const variant& cdr) const
     {
-      //std::cout << __PRETTY_FUNCTION__ << "\n";
       return cons_ptr(new cons(car, cdr));
     }
   };
@@ -98,7 +86,7 @@ namespace lisp
   
 
   //
-  //  handles sugary constructs like comma, comma_at, backtick, quote
+  //  handles sugary constructs like comma, comma_at, backquote, quote
   //
   struct sugar_cons : variant_maker
   {
@@ -117,7 +105,7 @@ namespace lisp
 
   namespace {
     phoenix::function<sugar_cons> quote(sugar_cons("quote"));
-    phoenix::function<sugar_cons> backtick(sugar_cons("backtick"));
+    phoenix::function<sugar_cons> backquote(sugar_cons("backquote"));
     phoenix::function<sugar_cons> comma_at(sugar_cons("comma_at"));
     phoenix::function<sugar_cons> comma(sugar_cons("comma"));
   }
@@ -166,7 +154,7 @@ namespace lisp
     sexpr =
       atom                           [ _val = _1               ] 
       | "'" >> sexpr                 [ _val = quote(_1)        ]
-      | "`" >> sexpr                 [ _val = backtick(_1)     ]
+      | "`" >> sexpr                 [ _val = backquote(_1)     ]
       | ",@" >> sexpr                [ _val = comma_at(_1)     ]
       | "," >> sexpr                 [ _val = comma(_1)        ]
       | cons                         [ _val = _1               ]
@@ -175,20 +163,19 @@ namespace lisp
       ;
       
     identifier = 
-      raw
-      [
-         lexeme
-         [
-            +(alnum | '+' | '-' | '*' | '/')
-         ]
-      ][_val = make_symbol(_1)];
+      lexeme[
+	     +(alnum | char_("+") | char_("-") | char_("*") | char_("/"))
+	     ]
+      [ 
+       _val = construct<symbol>(_1) 
+	];
 
     escaped_char %= ('\\' >> char_) | (char_ - '"')
       ;
 
     quoted_string = 
       lexeme[ '"' >> +escaped_char >> '"' ]
-      [ _val = construct<std::string>(&front(_1)) ]
+      [ _val = construct<std::string>(&front(_1), size(_1)) ]
       ;
 
     atom %=

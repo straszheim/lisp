@@ -5,11 +5,15 @@
 #include <boost/variant.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <string>
+#include <vector>
 
 namespace lisp {
   struct symbol : std::string
   {
     symbol(const std::string& s) : std::string(s) { }
+    symbol(const char* s, unsigned len) : std::string(s, len) { }
+    symbol(const std::vector<char>& s) 
+      : std::string(s.data(), s.size()) { }
   };
 
   struct cons;
