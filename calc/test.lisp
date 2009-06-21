@@ -1,6 +1,6 @@
+#!/home/troy/Projects/boospiele/calc/build/lisp
 
-;; #!/usr/bin/sbcl
-;; #!/home/troy/Projects/boospiele/calc/build/lisp
+;; #!/usr/bin/clisp
 ;;
 ;; silly test suite
 ;;
