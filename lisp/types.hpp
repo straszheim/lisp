@@ -22,9 +22,14 @@ namespace lisp
     symbol(const std::string& s) : std::string(s) { }
     symbol(const char* s, unsigned len) : std::string(s, len) { }
     symbol(const std::vector<char>& s) 
-      : std::string(s.data(), s.size()) 
+      : std::string(s.begin(), s.end()) 
     { }
   };
+
+  inline void swap(symbol& s1, symbol& s2)
+  {
+    std::swap(s1, s2);
+  }
 
   struct cons;
   typedef boost::intrusive_ptr<cons> cons_ptr;
