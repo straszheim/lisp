@@ -302,6 +302,23 @@ namespace lisp {
       return s;
     }
 
+    variant lambda::operator()(context_ptr c, variant v)
+    {
+      SHOW;
+
+      variant l = v >> car;
+      std::vector<symbol> args;
+      while (! is_nil(l))
+	{
+	  symbol s = get<symbol>(l >> car);
+	  args.push_back(s);
+	  l = l >> cdr;
+	}
+      dispatch<void> dispatcher(v >> cdr);
+      dispatcher.args = args;
+      return function(dispatcher);
+    }
+
     struct reexec 
     {
       function f;

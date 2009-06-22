@@ -51,6 +51,7 @@ void add_builtins()
   global->put("if", lisp::function(lisp::ops::if_clause()));
   global->put("setf", lisp::function(lisp::ops::setf()));
   global->put("defmacro", lisp::function(lisp::ops::defmacro()));
+  global->put("lambda", lisp::function(lisp::ops::lambda()));
   //  global->put("macroexpand", lisp::function(lisp::ops::macroexpand()));
 
   global->put("t", t);

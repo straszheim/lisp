@@ -10,16 +10,17 @@
 
 (defun fail (what) 
   (setf failures (+ 1 failures)) 
-  (print "FAIL")
-  (print what)
-  'fail)
+  (print 'FAIL))
 
 (defun pass () 
   (setf passes (+ 1 passes)) 
-  'pass)
+  (print 'PASS))
 
 (defun test (what) 
-  (if (eval what) (pass) (fail what)))
+  (print what)
+  (if (eval what) 
+      (pass) 
+    (fail what)))
 
 (test '(equal t t))
 (test '(equal nil ()))
@@ -69,7 +70,6 @@
 ;  some recursion
 ;
 (defun factorial (x)
-  (print x)
   (if (equal x 1)
       1
     (* x (factorial (- x 1)))))
@@ -116,6 +116,21 @@
 
 (test '(equal (foomac *b*) '(7)))
 
+;
+; simple lambdas
+;
+(test '(equal ((lambda (x) (+ x 1)) 1) 2))
+(test '(equal ((lambda (x) (* x x)) 7) 49))
+
+;
+; lambda passed to function
+;
+
+(defun twice (fn x)
+  (fn (fn x)))
+
+(test '(equal (twice (lambda (n) (+ n 1)) 1) 3))
+(test '(equal (twice (lambda (n) (* n n)) 2) 16))
 
 
 ;

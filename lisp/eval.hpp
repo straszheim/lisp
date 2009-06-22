@@ -34,10 +34,7 @@ namespace lisp
     context_ptr ctx;
 
     template <typename T>
-    variant visit(T const& t)
-    {
-      return boost::apply_visitor(*this, t);
-    }
+    variant visit(T const& t);
 
   };
 

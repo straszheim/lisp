@@ -19,6 +19,12 @@ namespace lisp
     eval_visitor e(ctx);
     return boost::apply_visitor(e, v);
   }
+
+  template <typename T>
+  variant eval_visitor::visit(T const& t)
+  {
+    return boost::apply_visitor(*this, t);
+  }
   
   eval_visitor::eval_visitor(context_ptr _ctx) : ctx(_ctx) { }
 
@@ -44,8 +50,7 @@ namespace lisp
   //
   variant eval_visitor::operator()(const function& p)
   {
-    assert(0);
-    return 1313;
+    return p;
   }
 
   variant eval_visitor::operator()(const cons_ptr& p)
@@ -54,8 +59,9 @@ namespace lisp
     if (p == boost::get<cons_ptr>(nil))
       return p;
     //    ctx->dump(std::cout);
-    symbol sym = boost::get<symbol>(p->car);
-    function f = ctx->get<function>(sym);
+    variant v = visit(p->car);
+
+    function f = boost::get<function>(v);
 
     return f(ctx, p->cdr);
   }
