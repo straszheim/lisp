@@ -218,7 +218,7 @@ namespace lisp {
       } catch (const std::exception&) {
 	ctx->put(s, result);
       }
-      ctx->dump(std::cout);
+      //      ctx->dump(std::cout);
       return result;
     }
 
@@ -244,7 +244,7 @@ namespace lisp {
     {
       SHOW;
       variant last;
-      ctx->dump(std::cout);
+      //ctx->dump(std::cout);
       while (! is_nil(v))
 	{
 	  last = eval(ctx, v >> car);
