@@ -65,6 +65,9 @@
 (test '(equal (- 1 1 1) -1))
 (test '(equal (- 2 1) 1))
 
+;
+;  some recursion
+;
 (defun factorial (x)
   (print x)
   (if (equal x 1)
@@ -78,6 +81,9 @@
 (test '(equal (factorial 5) 120))
 
 
+;
+; quotes, commas, comma-at, backquotes syntax
+;
 (test '(equal 1 `,1))
 (test '(equal '(1 2) `(1 ,(+ 1 1))))
 (test '(equal '(1 (2 3) 4) `(1 ,(list (+ 1 1) (+ 1 1 1)) 4)))
@@ -98,8 +104,27 @@
 (test '(equal (eval '(+ 1 1)) 2))
 (test '(equal (eval '(+ 1 1)) `2))
 
+;
+; macros 101
+;
+(defvar *b* 7)
+(defun    foofun (x) `(list ,x))
+(test '(equal (foofun *b*) '(list 7)))
 
+(defmacro foomac (x) `(list ,x))
+(foomac *b*)
+
+(test '(equal (foomac *b*) '(7)))
+
+
+
+;
+; messy result display
+;
 (print "passes:")
 (print passes)
 (print "failures:")
 (print failures)
+
+
+

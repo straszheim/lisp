@@ -33,8 +33,6 @@ void add_builtins()
   global->put("*", lisp::function(lisp::ops::op<std::multiplies<double> >(1)));
   global->put("-", lisp::function(lisp::ops::minus()));
   global->put("/", lisp::function(lisp::ops::divides()));
-  //global->put("quote", lisp::function(lisp::ops::quote()));
-  //global->put("backquote", lisp::function(lisp::ops::backquote()));
   global->put("cons", lisp::function(lisp::ops::cons()));
   global->put("list", lisp::function(lisp::ops::list()));
   global->put("defvar", lisp::function(lisp::ops::defvar()));
@@ -45,6 +43,8 @@ void add_builtins()
   global->put("equal", lisp::function(lisp::ops::equal()));
   global->put("if", lisp::function(lisp::ops::if_clause()));
   global->put("setf", lisp::function(lisp::ops::setf()));
+  global->put("defmacro", lisp::function(lisp::ops::defmacro()));
+  //  global->put("macroexpand", lisp::function(lisp::ops::macroexpand()));
 
   global->put("t", t);
   global->put("nil",  nil);

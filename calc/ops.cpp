@@ -251,32 +251,19 @@ namespace lisp {
       {
 	SHOW;
 	cons_ptr l = get<cons_ptr>(v);
-	//	std::cout << "old scope:";
-	//	c->dump(std::cout);
 	context_ptr scope = c->scope();
-	//	std::cout << "new scope:";
-	//	scope->dump(std::cout);
-	//	std::cout << "adding " << args.size() << " args\n";
 	for(unsigned u = 0; u<args.size(); u++)
 	  {
 	    variant evalled = eval(c, l->car);
-	    //	    std::cout << args[u] << "\n";
 	    scope->put(args[u], evalled);
 	    l = get<cons_ptr>(l->cdr);
 	  }
-	//	scope->dump(std::cout);
 	
 	cons_ptr progn(new lisp::cons);
 	progn->car = symbol("progn");
 	progn->cdr = code;
 	variant v2(progn);
-	//	dout("readytorun", v2);
-	//	std::cout << "READY TO RUN:";
-	//debug(v2);
 	variant result = eval(scope, v2);
-	//	std::cout << "\nNOW IT IS:";
-	//	dout("afterrun", v2);
-	//	debug(v2);
 	return result;
       }
     };
@@ -295,6 +282,90 @@ namespace lisp {
 	  l = l >> cdr;
 	}
       dispatch<void> dispatcher(v >> cdr >> cdr);
+      dispatcher.args = args;
+      c->put(s, function(dispatcher));
+
+      return s;
+    }
+
+    struct reexec 
+    {
+      function f;
+
+      variant operator()(context_ptr c, variant v)
+      {
+	return f(c, v);
+      }
+    };
+
+
+    struct macroexpand_dispatch
+    {
+      variant code;
+      std::vector<symbol> args;
+
+      variant operator()(context_ptr c, variant v)
+      {
+	SHOW;	
+	cons_ptr l = get<cons_ptr>(v);
+	context_ptr scope = c->scope();
+	for(unsigned u = 0; u<args.size(); u++)
+	  {
+	    scope->put(args[u], l->car);
+	    l = get<cons_ptr>(l->cdr);
+	  }
+	
+	cons_ptr progn(new lisp::cons);
+	progn->car = symbol("progn");
+	progn->cdr = code;
+	variant v2(progn);
+	variant result = eval(scope, v2);
+	return result;
+      }
+    };
+
+    struct macroexec_dispatch
+    {
+      variant code;
+      std::vector<symbol> args;
+
+      variant operator()(context_ptr c, variant v)
+      {
+	SHOW;	
+	cons_ptr l = get<cons_ptr>(v);
+	context_ptr scope = c->scope();
+	for(unsigned u = 0; u<args.size(); u++)
+	  {
+	    scope->put(args[u], l->car);
+	    l = get<cons_ptr>(l->cdr);
+	  }
+	
+	cons_ptr progn(new lisp::cons);
+	progn->car = symbol("progn");
+	progn->cdr = code;
+	variant v2(progn);
+	variant yay = eval(scope, v2);
+	variant result = eval(c, yay);
+	return result;
+      }
+    };
+
+    variant defmacro::operator()(context_ptr c, variant v)
+    {
+      SHOW;
+
+      symbol s = get<symbol>(v >> car);
+      variant l = v >> cdr >> car;
+      std::vector<symbol> args;
+      while (! is_nil(l))
+	{
+	  symbol s = get<symbol>(l >> car);
+	  std::cout << "pushign arg " << s << "\n";
+	  args.push_back(s);
+	  l = l >> cdr;
+	}
+      macroexec_dispatch dispatcher;
+      dispatcher.code = v >> cdr >> cdr;
       dispatcher.args = args;
       c->put(s, function(dispatcher));
 

@@ -13,15 +13,10 @@ namespace lisp
     eval_visitor(context_ptr _ctx);
 
     variant operator()(double d);
-    
     variant operator()(const std::string& s);
-    
     variant operator()(const symbol& s);
-    
     variant operator()(const function& p);
-
     variant operator()(const cons_ptr& p);
-
     variant operator()(const special<backquoted_>& s);
     variant operator()(const special<quoted_>& s);
     variant operator()(const special<comma_at_>& s);
