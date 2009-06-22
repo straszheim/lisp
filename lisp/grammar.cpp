@@ -90,32 +90,6 @@ namespace lisp
     phoenix::function<make_cons_actor> make_cons;
   }
 
-  
-#if 0
-  //
-  //  handles sugary constructs like comma, comma_at, backquote, quote
-  //
-  struct sugar_cons : variant_maker
-  {
-    std::string name;
-
-    sugar_cons(const std::string& _name) : name(_name) { }
-    sugar_cons(const sugar_cons& rhs) : name(rhs.name) { }
-
-    variant operator()(const variant& v) const
-    {
-      cons_ptr tail = new cons(v);
-      cons_ptr head = new cons(symbol(name), tail);
-      return head;
-    }
-  };
-
-  namespace {
-    phoenix::function<sugar_cons> quote(sugar_cons("quote"));
-    phoenix::function<sugar_cons> comma_at(sugar_cons("comma_at"));
-    phoenix::function<sugar_cons> comma(sugar_cons("comma"));
-  }
-#endif
   template <typename T>
   struct sugar_ : variant_maker
   {
@@ -164,7 +138,8 @@ namespace lisp
   }
 
   template <typename Iterator>
-  interpreter<Iterator>::interpreter(bool _show_debug) : interpreter::base_type(sexpr), show_debug(_show_debug)
+  interpreter<Iterator>::interpreter(bool _show_debug) 
+  : interpreter::base_type(sexpr), show_debug(_show_debug)
   {
     using namespace qi::labels;
     using ascii::alpha;
