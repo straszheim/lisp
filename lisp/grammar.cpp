@@ -1,3 +1,10 @@
+//
+// Copyright Troy D. Straszheim 2009
+//
+// Distributed under the Boost Software License, Version 1.0
+// See http://www.boost.org/LICENSE_1.0.txt
+//
+
 #include <boost/intrusive_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/config/warning_disable.hpp>
