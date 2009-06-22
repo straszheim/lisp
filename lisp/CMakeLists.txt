@@ -6,15 +6,23 @@
 ##
 cmake_minimum_required(VERSION 2.6)
 
-include_directories("/home/troy/Projects/boost/src/")
+#
+#  Include boost headers
+#
+set(BOOST_ROOT "/home/troy/Projects/boost/src/")
+include_directories(${BOOST_ROOT})
 
+#
+#  Put this directory in include path
+#
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+#
+#  Compile all the .cpps
+#
 add_executable(lisp 
   main.cpp ops.cpp context.cpp eval.cpp types.cpp
   debug.cpp print.cpp dot.cpp
   grammar.cpp backquote.cpp
   )
-
-target_link_libraries(lisp stdc++)
 
