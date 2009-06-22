@@ -210,6 +210,7 @@ namespace lisp {
     {
       SHOW;
       symbol s = get<symbol>(v >> car);
+      std::cout << "SETTING " << s << "\n";
       variant result = eval(ctx, v >> cdr >> car);
       try {
 	variant& destination = ctx->get<variant>(s);
@@ -217,6 +218,7 @@ namespace lisp {
       } catch (const std::exception&) {
 	ctx->put(s, result);
       }
+      ctx->dump(std::cout);
       return result;
     }
 
@@ -242,12 +244,27 @@ namespace lisp {
     {
       SHOW;
       variant last;
+      ctx->dump(std::cout);
       while (! is_nil(v))
 	{
 	  last = eval(ctx, v >> car);
 	  v = v >> cdr;
 	}
       return last;
+    }
+
+    variant let::operator()(context_ptr ctx, variant v)
+    {
+      SHOW;
+      context_ptr scope = ctx->scope();
+      variant localpairlist = v >> car;
+      while (! is_nil(localpairlist))
+	{
+	  variant pair = localpairlist >> car;
+	  scope->put(get<symbol>(pair >> car), eval(ctx, pair >> cdr >> car));
+	  localpairlist = localpairlist >> cdr;
+	}
+      return progn()(scope, v >> cdr);
     }
 
     template <typename Signature>

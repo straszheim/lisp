@@ -32,6 +32,7 @@ namespace lisp {
     OP_FWD_DECL(format);
     OP_FWD_DECL(defmacro);
     OP_FWD_DECL(lambda);
+    OP_FWD_DECL(let);
 
     template <typename Op>
     struct op 

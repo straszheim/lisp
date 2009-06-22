@@ -52,7 +52,7 @@ void add_builtins()
   global->put("setf", lisp::function(lisp::ops::setf()));
   global->put("defmacro", lisp::function(lisp::ops::defmacro()));
   global->put("lambda", lisp::function(lisp::ops::lambda()));
-  //  global->put("macroexpand", lisp::function(lisp::ops::macroexpand()));
+  global->put("let", lisp::function(lisp::ops::let()));
 
   global->put("t", t);
   global->put("nil",  nil);
@@ -71,6 +71,8 @@ int repl(bool debug, std::istream& is)
   std::cout << "----------------------------\n> ";
 
   unsigned i = 0;
+
+  context_ptr scope = global->scope();
 
   while (std::getline(is, str))
     {
@@ -107,7 +109,7 @@ int repl(bool debug, std::istream& is)
 		}
 
 	      try {
-		variant out = eval(global, result);
+		variant out = eval(scope, result);
 		if (debug)
 		  {
 		    std::cout << "\nevalled to> ";
@@ -146,6 +148,8 @@ int offline(bool debug, std::istream& is)
 
   std::string::const_iterator pos = code.begin(), end = code.end();
 
+  context_ptr scope = global->scope();
+
   // if there's a hashbang,  strip her
   if (*pos == '#')
     while (*pos != '\n')
@@ -176,7 +180,7 @@ int offline(bool debug, std::istream& is)
 	    }
 
 	  try {
-	    variant out = eval(global, result);
+	    variant out = eval(scope, result);
 	    if (debug)
 	      {
 		std::cout << "\nevalled to> ";

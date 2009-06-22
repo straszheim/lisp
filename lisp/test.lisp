@@ -132,6 +132,15 @@
 (test '(equal (twice (lambda (n) (+ n 1)) 1) 3))
 (test '(equal (twice (lambda (n) (* n n)) 2) 16))
 
+;
+; let
+;
+(setf x 'outer)
+(test '(equal x 'outer))
+(let ((x 'inner)) (test '(equal x 'inner)))
+(test '(equal x 'outer))
+
+
 
 ;
 ; messy result display
