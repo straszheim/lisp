@@ -9,7 +9,9 @@ cmake_minimum_required(VERSION 2.6)
 #
 #  Include boost headers
 #
-set(BOOST_ROOT "/home/troy/Projects/boost/src/")
+set(BOOST_ROOT "BOOST_ROOT-NOTFOUND"
+	       CACHE PATH
+	       "Path to boost root (should contain boost/ headers directory")
 include_directories(${BOOST_ROOT})
 
 #
