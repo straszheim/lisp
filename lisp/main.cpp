@@ -32,6 +32,11 @@
 #include "dot.hpp"
 #include "grammar.hpp"
 
+#ifdef HAVE_READLINE_H
+#include <readline/readline.h>
+#include <readline/history.h>
+#endif
+
 using namespace lisp;
 
 void add_builtins()
@@ -60,6 +65,34 @@ void add_builtins()
 
 skipper_t skipper;
 
+/* Read a string, and return a pointer to it.
+   Returns NULL on EOF. */
+const char *
+rl_gets ()
+{
+  /* A static variable for holding the line. */
+  static char *line_read = (char *)NULL;
+
+  /* If the buffer has already been allocated,
+     return the memory to the free pool. */
+  if (line_read)
+    {
+      free (line_read);
+      line_read = (char *)NULL;
+    }
+
+  /* Get a line from the user. */
+  line_read = readline ("> ");
+
+  /* If the line has any text in it,
+     save it on the history. */
+  if (line_read && *line_read)
+    add_history (line_read);
+
+  return (line_read);
+}
+
+
 int repl(bool debug, std::istream& is)
 {
   interpreter_t lispi(debug); // Our grammar
@@ -68,14 +101,26 @@ int repl(bool debug, std::istream& is)
   
   std::cout << "A lisp interpreting plaything\n(c) 2009 Troy D. Straszheim\n";
   
-  std::cout << "----------------------------\n> ";
+  std::cout << "----------------------------\n";
 
   unsigned i = 0;
 
   context_ptr scope = global->scope();
 
-  while (std::getline(is, str))
+  while (true)
     {
+#ifdef HAVE_READLINE_H
+      const char * strang = rl_gets();
+      if (! strang)
+	break;
+      else 
+	str = strang;
+#else
+      std::cout << "> ";
+      bool gotone = std::getline(is, str);
+      if (!gotone)
+	break;
+#endif
       i++;
       str += "\n";
       std::string::const_iterator iter = str.begin();
@@ -125,7 +170,6 @@ int repl(bool debug, std::istream& is)
 	      }
 	    }
         }
-      std::cout << "> ";
     }
   std::cout << "Ciao.\n";
   return 0;

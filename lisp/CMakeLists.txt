@@ -6,6 +6,12 @@
 ##
 cmake_minimum_required(VERSION 2.6)
 
+option(USE_READLINE "Use gnu readline" OFF)
+
+if(USE_READLINE)
+  add_definitions(-DHAVE_READLINE_H)
+endif()
+
 #
 #  Include boost headers
 #
@@ -27,4 +33,8 @@ add_executable(lisp
   debug.cpp print.cpp dot.cpp
   grammar.cpp backquote.cpp
   )
+
+if(USE_READLINE)
+  target_link_libraries(lisp readline)
+endif()
 
