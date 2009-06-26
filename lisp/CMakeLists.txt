@@ -5,22 +5,14 @@
 ## See http://www.boost.org/LICENSE_1.0.txt
 ##
 cmake_minimum_required(VERSION 2.6)
+include(CheckIncludeFiles)
+check_include_files("readline/readline.h;readline/history.h" USE_READLINE)
 
-find_path(READLINE_H_PATH readline/readline.h)
-if(READLINE_H_PATH)
-  message("readline/readline.h found at ${READLINE_H_PATH}, enabling readline")
-endif()
-
-if(READLINE_H_PATH)
-  option(USE_READLINE "Use gnu readline" ON)
-else()
-  option(USE_READLINE "Use gnu readline" OFF)
-endif()
+set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build debug by default")
 
 if(USE_READLINE)
-  add_definitions(-DHAVE_READLINE_H)
+  message(STATUS "readline/readline.h found, enabling readline")
 endif()
-    
 
 #
 #  Include boost headers
@@ -48,3 +40,6 @@ if(USE_READLINE)
   target_link_libraries(lisp readline)
 endif()
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.hpp.in 
+  ${CMAKE_CURRENT_BINARY_DIR}/config.hpp)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})

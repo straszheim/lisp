@@ -32,7 +32,7 @@
 #include "dot.hpp"
 #include "grammar.hpp"
 
-#ifdef HAVE_READLINE_H
+#ifdef USE_READLINE
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
@@ -65,7 +65,7 @@ void add_builtins()
 
 skipper_t skipper;
 
-#ifdef HAVE_READLINE_H
+#ifdef USE_READLINE
 /* Read a string, and return a pointer to it.
    Returns NULL on EOF. */
 const char *
@@ -110,7 +110,7 @@ int repl(bool debug, std::istream& is)
 
   while (true)
     {
-#ifdef HAVE_READLINE_H
+#ifdef USE_READLINE
       const char * strang = rl_gets();
       if (! strang)
 	break;
