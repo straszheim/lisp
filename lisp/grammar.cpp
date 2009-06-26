@@ -134,7 +134,12 @@ namespace lisp
     start =
       space                            // tab/space/cr/lf
       | ";" >> *(char_ - eol) >> eol     // C-style comments
+      | "#|" >> comment_end
       ;
+
+    comment_end = (char_ >> "|#") || (char_ >> comment_end)
+      ;
+
   }
 
   template <typename Iterator>

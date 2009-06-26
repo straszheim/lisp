@@ -56,7 +56,7 @@ namespace lisp
   {
     white_space();
 
-    rule<Iterator> start;
+    rule<Iterator> start, comment_end;
   };
 
   template <typename Iterator>
