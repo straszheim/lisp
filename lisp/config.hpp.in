@@ -23,4 +23,7 @@
 
 #cmakedefine USE_READLINE
 
+namespace lisp {
+  extern bool debug_contexts, debug_all;
+}
 #endif

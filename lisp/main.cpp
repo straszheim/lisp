@@ -18,6 +18,8 @@
 #include <boost/function.hpp>
 #include <boost/format.hpp>
 
+#include <boost/program_options.hpp>
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -250,9 +252,28 @@ int offline(bool debug, std::istream& is)
 ///////////////////////////////////////////////////////////////////////////////
 //  Main program
 ///////////////////////////////////////////////////////////////////////////////
+
+namespace opts = boost::program_options;
+namespace lisp {
+  bool debug_contexts, debug_all;
+}
 int
 main(int argc, char** argv)
 {
+  opts::options_description desc("Options");
+
+  desc.add_options()
+    ("debug,d", "debug things")
+    ("contexts,c", "dump contexts")
+    ;
+  opts::variables_map vm;
+
+  opts::store(opts::parse_command_line(argc, argv, desc), vm);
+  opts::notify(vm);
+
+  lisp::debug_all = vm.count("debug");
+  lisp::debug_contexts = vm.count("contexts");
+
   add_builtins();
 
   std::list<std::string> args(argv+1, argv+argc);
