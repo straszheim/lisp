@@ -65,6 +65,7 @@ void add_builtins()
 
 skipper_t skipper;
 
+#ifdef HAVE_READLINE_H
 /* Read a string, and return a pointer to it.
    Returns NULL on EOF. */
 const char *
@@ -91,7 +92,7 @@ rl_gets ()
 
   return (line_read);
 }
-
+#endif
 
 int repl(bool debug, std::istream& is)
 {

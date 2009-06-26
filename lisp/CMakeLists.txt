@@ -6,11 +6,21 @@
 ##
 cmake_minimum_required(VERSION 2.6)
 
-option(USE_READLINE "Use gnu readline" OFF)
+find_path(READLINE_H_PATH readline/readline.h)
+if(READLINE_H_PATH)
+  message("readline/readline.h found at ${READLINE_H_PATH}, enabling readline")
+endif()
+
+if(READLINE_H_PATH)
+  option(USE_READLINE "Use gnu readline" ON)
+else()
+  option(USE_READLINE "Use gnu readline" OFF)
+endif()
 
 if(USE_READLINE)
   add_definitions(-DHAVE_READLINE_H)
 endif()
+    
 
 #
 #  Include boost headers
