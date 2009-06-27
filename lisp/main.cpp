@@ -122,9 +122,8 @@ int repl(bool debug, std::istream& is)
 	str = strang;
 #else
       std::cout << "> ";
-      bool gotone = std::getline(is, str);
-      if (!gotone)
-	break;
+      if (!std::getline(is, str))
+		break;
 #endif
       i++;
       str += "\n";
@@ -290,8 +289,8 @@ main(int argc, char* argv[])
       exit(0);
     }
 
-  lisp::debug_all = vm.count("debug");
-  lisp::debug_contexts = vm.count("contexts");
+  lisp::debug_all = vm.count("debug") > 0;
+  lisp::debug_contexts = vm.count("contexts") > 0;
 
   add_builtins();
 
