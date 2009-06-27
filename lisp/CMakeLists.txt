@@ -27,7 +27,7 @@ set(BOOST_LIBRARIES_DIR "BOOST_LIBRARIES_DIR-NOTFOUND"
   "Path to directory containing boost libraries")
 
 find_library(BOOST_PROGRAM_OPTIONS
-  boost_program_options-mt
+  boost_program_options-mt-d
   PATHS ${BOOST_LIBRARIES_DIR}
   NO_DEFAULT_PATH)
 

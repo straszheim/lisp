@@ -210,15 +210,17 @@ namespace lisp {
     {
       SHOW;
       symbol s = get<symbol>(v >> car);
-      std::cout << "SETTING " << s << "\n";
       variant result = eval(ctx, v >> cdr >> car);
+      //      std::cout << "SETTING " << s << " to ";
+      //lisp::print(std::cout, result);
+
       try {
 	variant& destination = ctx->get<variant>(s);
 	destination = result;
       } catch (const std::exception&) {
 	ctx->put(s, result);
       }
-      //      ctx->dump(std::cout);
+      //ctx->dump(std::cout);
       return result;
     }
 
@@ -272,6 +274,7 @@ namespace lisp {
     {
       variant code;
       std::vector<symbol> args;
+      context_ptr ctx;
 
       dispatch(variant _code) : code(_code) 
       { 
@@ -282,7 +285,7 @@ namespace lisp {
       {
 	SHOW;
 	cons_ptr l = get<cons_ptr>(v);
-	context_ptr scope = c->scope();
+	context_ptr scope = ctx->scope();
 	for(unsigned u = 0; u<args.size(); u++)
 	  {
 	    variant evalled = eval(c, l->car);
@@ -314,6 +317,7 @@ namespace lisp {
 	}
       dispatch<void> dispatcher(v >> cdr >> cdr);
       dispatcher.args = args;
+      dispatcher.ctx = c;
       c->put(s, function(dispatcher));
 
       return s;
@@ -333,6 +337,7 @@ namespace lisp {
 	}
       dispatch<void> dispatcher(v >> cdr);
       dispatcher.args = args;
+      dispatcher.ctx = c;
       return function(dispatcher);
     }
 

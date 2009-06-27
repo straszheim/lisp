@@ -193,6 +193,7 @@ int offline(bool debug, std::istream& is)
       code += c;
   } while (! is.eof());
 
+  std::cout << "BING\n";
   std::string::const_iterator pos = code.begin(), end = code.end();
 
   context_ptr scope = global->scope();
@@ -254,42 +255,54 @@ int offline(bool debug, std::istream& is)
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace opts = boost::program_options;
-namespace lisp {
+
+namespace lisp 
+{
   bool debug_contexts, debug_all;
 }
+
 int
-main(int argc, char** argv)
+main(int argc, char* argv[])
 {
   opts::options_description desc("Options");
 
   desc.add_options()
     ("debug,d", "debug things")
     ("contexts,c", "dump contexts")
+    ("help,h", "show this help")
+    ("input,i", "input file")
     ;
   opts::variables_map vm;
 
-  opts::store(opts::parse_command_line(argc, argv, desc), vm);
+  opts::positional_options_description p;
+  p.add("input", 1);
+
+  opts::store(opts::command_line_parser(argc, argv)
+	      .options(desc)
+	      .positional(p)
+	      .run(), vm);
   opts::notify(vm);
+
+  if(vm.count("help"))
+    {
+      std::cerr << desc << "\n";
+      exit(0);
+    }
 
   lisp::debug_all = vm.count("debug");
   lisp::debug_contexts = vm.count("contexts");
 
   add_builtins();
 
-  std::list<std::string> args(argv+1, argv+argc);
-
-  bool debug = false;
-  if(args.size() > 0 && args.front() == "-d")
+  if (vm.count("input"))
     {
-      debug = true;
-      args.pop_front();
-    }
-  if (args.size() == 1)
-    {
-      std::ifstream is(args.front().c_str());
-      offline(debug, is);
+      std::string fname = vm["input"].as<std::string>();
+      if (debug_all)
+	std::cout << "reading from " <<  fname << "\n";
+      std::ifstream is(fname.c_str());
+      offline(debug_all, is);
     }
   else
-    repl(debug, std::cin);
+    repl(debug_all, std::cin);
 }
 

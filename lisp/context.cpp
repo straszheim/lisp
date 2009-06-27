@@ -8,6 +8,7 @@
 #include "types.hpp"
 #include "context.hpp"
 #include "print.hpp"
+#include "config.hpp"
 
 #include <iostream>
 
@@ -23,7 +24,8 @@ namespace lisp
     assert(this_ptr.get() == this);
     newscope->next_ = this_ptr;
     //    std::cout << "new ";
-    //    newscope->dump(std::cout);
+    if (debug_contexts)
+      newscope->dump(std::cout);
     return newscope;
   }
 
@@ -45,7 +47,8 @@ namespace lisp
   {
     //    std::cout << "looking for " << s << "\n";
     context_ptr ctx = shared_from_this();
-    //    ctx->dump(std::cerr);
+    if (debug_contexts)
+      ctx->dump(std::cerr);
     while (ctx)
       {
 	std::map<std::string, variant>::iterator iter = ctx->m_.find(s);

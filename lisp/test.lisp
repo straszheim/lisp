@@ -137,10 +137,25 @@
 ;
 (setf x 'outer)
 (test '(equal x 'outer))
-(let ((x 'inner)) (test '(equal x 'inner)))
+(let ((x 'inner)) 
+  (test '(equal x 'inner)))
 (test '(equal x 'outer))
 
+;
+; closure!
+;
 
+(setf closure
+      (let ((y 0))
+	(lambda (x) 
+	  (setf y (+ y 1))
+	  (+ x y))))
+
+(test '(equal (closure 1) 2))
+(test '(equal (closure 1) 3))
+(test '(equal (closure 1) 4))
+(setf y 13)
+(test '(equal (closure 1) 5))
 
 ;
 ; messy result display
@@ -149,6 +164,4 @@
 (print passes)
 (print "failures:")
 (print failures)
-
-
 
