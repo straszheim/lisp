@@ -15,6 +15,7 @@
 
 namespace lisp {
   namespace ops {
+
     OP_FWD_DECL(cons);
     OP_FWD_DECL(divides);
     OP_FWD_DECL(minus);
@@ -33,6 +34,7 @@ namespace lisp {
     OP_FWD_DECL(defmacro);
     OP_FWD_DECL(lambda);
     OP_FWD_DECL(let);
+    OP_FWD_DECL(funcall);
 
     template <typename Op>
     struct op 

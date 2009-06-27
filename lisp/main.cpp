@@ -25,6 +25,7 @@
 #include <string>
 #include <map>
 
+#include "config.hpp"
 #include "types.hpp"
 #include "ops.hpp"
 #include "context.hpp"
@@ -52,6 +53,7 @@ void add_builtins()
   global->put("defvar", lisp::function(lisp::ops::defvar()));
   global->put("print", lisp::function(lisp::ops::print()));
   global->put("eval", lisp::function(lisp::ops::evaluate()));
+  global->put("funcall", lisp::function(lisp::ops::funcall()));
   global->put("defun", lisp::function(lisp::ops::defun()));
   global->put("progn", lisp::function(lisp::ops::progn()));
   global->put("equal", lisp::function(lisp::ops::equal()));
@@ -193,7 +195,6 @@ int offline(bool debug, std::istream& is)
       code += c;
   } while (! is.eof());
 
-  std::cout << "BING\n";
   std::string::const_iterator pos = code.begin(), end = code.end();
 
   context_ptr scope = global->scope();

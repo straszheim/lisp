@@ -58,6 +58,7 @@ namespace lisp
     variant car_result = visit(p->car);
     variant cdr_result = visit(p->cdr);
 
+    // if the car is a comma-at, then splice
     if (boost::get<special<comma_at_> >(&(p->car)))
       {
 	last(car_result)->cdr = cdr_result;
@@ -69,22 +70,25 @@ namespace lisp
 
   variant backquote_visitor::operator()(const special<backquoted_>& s)
   {
+    // passthrough, removing backquote
     return visit(s.v);
   }
 
   variant backquote_visitor::operator()(const special<quoted_>& s)
   {
-    return s.v;
+    // passthrough, preserve quote
+    return special<quoted_>(visit(s.v));
   }
 
   variant backquote_visitor::operator()(const special<comma_at_>& s)
   {
-    variant result = eval(ctx, s.v);
-    return result;
+    // bounce to eval visitor
+    return eval(ctx, s.v);
   }
 
   variant backquote_visitor::operator()(const special<comma_>& s)
   {
+    // bounce to eval visitor
     return eval(ctx, s.v);
   }
 

@@ -242,6 +242,11 @@ namespace lisp {
       return evalled;
     }
 
+    variant funcall::operator()(context_ptr ctx, variant v)
+    {
+      return eval(ctx, v);
+    }
+
     variant progn::operator()(context_ptr ctx, variant v)
     {
       SHOW;

@@ -8,6 +8,7 @@
 #include "config.hpp"
 #include "types.hpp"
 #include "eval.hpp"
+#include "print.hpp"
 #include "backquote.hpp"
 
 #include <iostream>
@@ -45,9 +46,6 @@ namespace lisp
     return ctx->get<variant>(s);
   }
 
-  //
-  //  don't remember why i put this here
-  //
   variant eval_visitor::operator()(const function& p)
   {
     return p;
@@ -58,9 +56,8 @@ namespace lisp
     SHOW;
     if (p == boost::get<cons_ptr>(nil))
       return p;
-    //    ctx->dump(std::cout);
+    // ctx->dump(std::cout);
     variant v = visit(p->car);
-
     function f = boost::get<function>(v);
 
     return f(ctx, p->cdr);
