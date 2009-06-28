@@ -47,9 +47,7 @@ message(STATUS "BOOST_LIBRARIES_DIR = ${BOOST_LIBRARIES_DIR}")
 if(IS_DIRECTORY "${BOOST_LIBRARIES_DIR}")
   message(STATUS "BOOST_LIBRARIES_DIR is a directory.  Trying.")
 else()
-
   message(FATAL_ERROR "BOOST_LIBRARIES_DIR is not a directory.  Cannot continue.")
-
 endif()
 
 
@@ -74,6 +72,7 @@ add_subdirectory(cmake)
 
 foreach(subdir 
     lisp
+    word_count_static
     )
   add_subdirectory(${subdir})
 endforeach()
