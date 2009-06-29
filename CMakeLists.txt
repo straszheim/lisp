@@ -14,6 +14,13 @@ if(USE_READLINE)
   message(STATUS "readline/readline.h found, enabling readline")
 endif()
 
+message(">>>$ENV{BOOST_ROOT}")
+if(NOT BOOST_ROOT AND NOT DEFINED ENV{BOOST_ROOT})
+  # nothing
+  message(FATAL_ERROR "BOOST_ROOT set neither in cache nor in environment.  No idea where to start looking for our beloved boost.")
+endif()
+
+
 #
 #  Include boost headers
 #
@@ -73,6 +80,7 @@ add_subdirectory(cmake)
 foreach(subdir 
     lisp
     word_count_static
+    lex
     )
   add_subdirectory(${subdir})
 endforeach()
