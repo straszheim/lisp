@@ -34,10 +34,13 @@
 #include <boost/spirit/include/lex_lexertl.hpp>
 
 #include <boost/spirit/home/lex/argument.hpp>
+#include <boost/spirit/home/lex/lexer/pass_flags.hpp>
+#include <boost/format.hpp>
 
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <stack>
 
 #include "example.hpp"
 
@@ -47,6 +50,7 @@ using namespace boost::spirit::lex;
 
 using boost::phoenix::val;
 using boost::phoenix::ref;
+using boost::phoenix::construct;
 
 struct distance_func
 {
@@ -65,35 +69,25 @@ boost::phoenix::function<distance_func> const distance = distance_func();
 ///////////////////////////////////////////////////////////////////////////////
 //  Token definition
 ///////////////////////////////////////////////////////////////////////////////
-struct set_state_
+
+typedef boost::variant<unsigned, std::string> variant;
+
+struct strlen_actor
 {
-  template <typename T1=void, typename T2=void, typename T3=void, typename T4=void, typename T5=void>
-  struct result
-  {
-    typedef void type;
+  template <typename T>
+  struct result {
+    typedef unsigned type;
   };
-
-  typedef void result_type;
-
-  std::string to_what;
-
-  set_state_(const char* _to_what) 
-    : to_what(_to_what) 
-  { }
-
-  set_state_(const std::string& _to_what) 
-    : to_what(_to_what) 
-  { }
-
-  template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  void operator()(T1, T2, T3, T4, T5& thingy) const
+  
+  unsigned 
+  operator()(const variant& v) const
   {
-    std::cout << __PRETTY_FUNCTION__ << "\n SET STATE:" << to_what << "\n";
-    thingy.set_state_name(to_what.c_str());
+    const std::string& s = boost::get<std::string>(v);
+    return s.size();
   }
 };
 
-// typedef boost::phoenix::function<set_state_> const setter;
+boost::phoenix::function<strlen_actor> const strlen_ = strlen_actor();
 
 template <typename Lexer>
 struct example4_tokens : lexer<Lexer>
@@ -106,6 +100,8 @@ struct example4_tokens : lexer<Lexer>
     using boost::phoenix::val;
     using boost::phoenix::ref;
 
+    dentlevel = 0;
+
     // define the tokens to match
     identifier = "[a-zA-Z_][a-zA-Z0-9_]*";
     constant = "[0-9]+";
@@ -115,7 +111,8 @@ struct example4_tokens : lexer<Lexer>
     newline = "\\n";
     comment = "#[^\\n]*";
     def = "def";
-    whitespace = "[ ]+"; 
+    whitespace = "[ ]*";
+    dent = "[ ]*";
 
     //   token_def<>("[ \\t\\n]+")[ ref(dentlevel) = distance(_start, _end) ]
     //      |   "\\/\\*[^*]*\\*+([^/*][^*]*\\*+)*\\/"
@@ -123,7 +120,7 @@ struct example4_tokens : lexer<Lexer>
     // associate the tokens and the token set with the lexer
     //    this->self = token_def<>('(') | ')' | '{' | '}' | '=' | ';' | constant;
 
-    this->self = 
+    this->self("INITIAL") = 
       if_
       | def
       | else_ 
@@ -131,14 +128,21 @@ struct example4_tokens : lexer<Lexer>
       | identifier
       | constant
       | '(' | ')' | ':' | '=' | '+'
-      | comment
-      | newline[ set_state_("WS") ]
-      | whitespace [ set_state_("INITIAL") ]
+      | comment/*[ std::cout << _state ]*/
+      | newline[ _state = "DENT" ]
+      // | whitespace[ _state = "INITIAL", std::cout << _state ]
       ;
-    
-    skip_set = "[ \\t\\n]+" ;
 
-    this->self("WS") = skip_set;
+    this->self("DENT") = dent [ _state = "INITIAL" ] 
+      ;
+
+    skip_set = "[ \\t\\n]+" 
+      ;
+
+    this->self("WS") = skip_set
+      ;
+
+    this->self("UNUSED") = indent | dedent;
 
     names[identifier.id()] = "IDENTIFIER";
     names[comment.id()] = "COMMENT";
@@ -146,19 +150,23 @@ struct example4_tokens : lexer<Lexer>
     names[whitespace.id()] = "WHITESPACE";
     names[def.id()] = "DEF";
     names[constant.id()] = "CONSTANT";
+    names[dent.id()] = "DENT";
+    names[indent.id()] = "INDENT";
+    names[dedent.id()] = "DEDENT";
   }
 
   unsigned dentlevel;
 
   std::map<std::size_t, std::string> names;
 
-  token_def<> if_, else_, while_, def, newline, comment, whitespace;
+  token_def<> if_, else_, while_, def, newline, comment, whitespace, indent, dedent;
 
-  token_def<std::string> identifier;
+  token_def<std::string> identifier, dent;
   token_def<unsigned int> constant;
 
   // token set to be used as the skip parser
   token_set skip_set;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -170,28 +178,32 @@ struct example4_grammar
 {
   template <typename TokenDef>
   example4_grammar(TokenDef const& tok)
-    : example4_grammar::base_type(program)
+    : example4_grammar::base_type(skunk)
   {
-    program =  +block
+    /*
+    program 
+      = +block
       ;
 
     block
-      =   *statement
+      = *statement
       ;
 
-    comment = tok.comment
+    comment 
+      = tok.comment
       ;
 
-    newline = tok.newline
+    newline 
+      = tok.newline
       ;
 
     statement 
-      =   assignment
-      | if_stmt
-      | while_stmt
-      | comment
-      | tok.whitespace
-      | newline
+      =  assignment
+      |  if_stmt
+      |  while_stmt
+      |  comment
+      |  tok.whitespace
+      |  newline
       ;
 
     assignment 
@@ -224,43 +236,73 @@ struct example4_grammar
       =   tok.identifier [ _val = _1 ]
       |   tok.constant   [ _val = _1 ]
       ;
+    */
 
-    program.name("program");
-    debug(program);
+    identifier %= tok.identifier
+      ;
 
-    block.name("block");
-    debug(block);
+    newline %= tok.newline
+      ;
 
-    statement.name("statement");
-    debug(statement);
+    dent = tok.dent [ _val = strlen_(_1) ]
+      ;
 
-    comment.name("comment");
-    debug(comment);
+    whitespace %= tok.whitespace
+      ;
 
+    skunk %= +(identifier | newline | dent | whitespace)[ std::cout << val("[[") << _1 << "]]\n" ];
+
+    skunk.name("skunk");
+    identifier.name("identifier");
+    dent.name("dent");
+    whitespace.name("whitespace");
     newline.name("newline");
-    debug(newline);
 
+    /*
+    debug(whitespace);
+    debug(skunk);
+    debug(identifier);
+    debug(dent);
+    debug(newline);
+    */
+
+    dent_stack.push(0);
   }
+
+  std::stack<unsigned> dent_stack;
 
   typedef typename Lexer::token_set token_set;
   typedef boost::variant<unsigned int, std::string> expression_type;
 
-  rule<Iterator, in_state_skipper<token_set> > program, block, statement,
-						 assignment, if_stmt,
-						 while_stmt, comment,
-						 newline
-						 ;
+  rule<Iterator, std::string(), in_state_skipper<token_set> > identifier, newline, whitespace;
 
+  rule<Iterator, unsigned(), in_state_skipper<token_set> > dent;
 
+  /*
+    rule<Iterator, expression_type(), in_state_skipper<token_set> >
+    program, block, statement, assignment, if_stmt, while_stmt, comment,  expresssion;
+  */
 
   //  the expression is the only rule having a return value
-  rule<Iterator, expression_type(), in_state_skipper<token_set> >  expression;
+  rule<Iterator, in_state_skipper<token_set> > skunk;
 };
+
+struct dent_calculator
+{
+  std::stack<unsigned> stack;
+};
+
+
+template <typename T>
+void boo(T const&)
+{
+  std::cout << __PRETTY_FUNCTION__ << "\n";
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 int main()
 {
-  // iterator type used to expose the underlying input stream
   typedef std::string::iterator base_iterator_type;
 
   //[example4_token
@@ -277,9 +319,10 @@ int main()
   // least one token attribute type you'll have to list all attribute types 
   // used for token_def<> declarations in the token definition class above, 
   // otherwise compilation errors will occur.
-  typedef lexertl::token<
-  base_iterator_type, boost::mpl::vector<unsigned int, std::string> 
+  typedef lexertl::token< 
+  base_iterator_type, boost::mpl::vector<unsigned int, std::string>
     > token_type;
+
   //]
   // Here we use the lexertl based lexer engine.
   typedef lexertl::actor_lexer<token_type> lexer_type;
@@ -289,9 +332,10 @@ int main()
 
   // this is the iterator type exposed by the lexer 
   typedef example4_tokens::iterator_type iterator_type;
+  typedef std::vector<iterator_type::value_type>::iterator grammar_iterator_type;
 
   // this is the type of the grammar to parse
-  typedef example4_grammar<iterator_type, lexer_type> example4_grammar;
+  typedef example4_grammar<grammar_iterator_type, lexer_type> example4_grammar;
 
   // now we use the types defined above to create the lexer and grammar
   // object instances needed to invoke the parsing process
@@ -306,10 +350,48 @@ int main()
   iterator_type iter = tokens.begin(it, str.end());
   iterator_type end = tokens.end();
         
+  std::vector<iterator_type::value_type> dented_tokens;
+  std::stack<unsigned> stack;
+  stack.push(0);
+
   unsigned z = 0;
-  while(*iter != 0 && z < 50)
+  while(iter != end)
     {
-      std::cout << "[" << *iter << " ";
+      std::cout << "\t[" << *iter << " " << iter->value() << "\t";
+
+      if (*iter == tokens.dent.id())
+	{
+	  //	  unsigned u = boost::get<unsigned>(iter->value());
+	  //	  std::string s(iter->value().begin(), iter->value().end());
+	  boost::iterator_range<std::string::iterator> pr 
+	    = boost::get<boost::iterator_range<std::string::iterator> >(iter->value());
+
+	  std::size_t dist = std::distance(pr.begin(), pr.end());
+
+	  std::cout << "DENT[" << iter->value() << " " << dist << "]\n";
+	  if (dist > stack.top())
+	    {
+	      stack.push(dist);
+	      iterator_type::value_type newtoken = *iter;
+	      newtoken.id(tokens.indent.id());
+	      dented_tokens.push_back(newtoken);
+	    }
+	  else if (dist < stack.top())
+	    {
+	      while (dist < stack.top())
+		{
+		  stack.pop();
+		  iterator_type::value_type newtoken = *iter;
+		  newtoken.id(tokens.dedent.id());
+		  dented_tokens.push_back(newtoken);
+		}
+	      if (dist != stack.top())
+		throw "BAD DENT\n";
+	    }
+	}
+      else
+	dented_tokens.push_back(*iter);
+
       if (*iter < 127)
 	{
 	  char c = *iter;
@@ -319,20 +401,27 @@ int main()
 	{
 	  std::cout << tokens.names[*iter];
 	}
-      std::cout << "]\n";
+      std::cout << "\t" << tokens.dentlevel << "]\n";
       
       iter++;
       z++;
     }
-  return 0;
-  // Parsing is done based on the the token stream, not the character 
-  // stream read from the input.
-  // Note, how we use the token_set defined above as the skip parser. It must
-  // be explicitly wrapped inside a state directive, switching the lexer 
-  // state for the duration of skipping whitespace.
-  bool r = phrase_parse(iter, end, calc, in_state("WS")[tokens.skip_set]);
+  assert(stack.size() == 1);
 
-  std::cout << "r=" << r << "\n";
+  std::cout << "----------------------------\n--------------------------------\n";
+  
+  for (std::vector<iterator_type::value_type>::iterator iter = dented_tokens.begin();
+       iter != dented_tokens.end();
+       iter++)
+    {
+      std::cout << "[" << *iter << "\t" << tokens.names[*iter] << "\t"
+		<< iter->value() << "]\n";
+    }
+
+bool r = phrase_parse(dented_tokens.begin(), dented_tokens.end(), 
+		      calc, in_state("WS")[tokens.skip_set]);
+
+  std::cout << "\nsuccess=" << r << "\n";
 
   if (r && iter == end)
     {
