@@ -80,7 +80,7 @@ add_subdirectory(cmake)
 foreach(subdir 
     lisp
     word_count_static
-    lex
+    python
     )
   add_subdirectory(${subdir})
 endforeach()

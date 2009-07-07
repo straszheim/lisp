@@ -5,6 +5,5 @@
 ## See http://www.boost.org/LICENSE_1.0.txt
 ##
 
-#add_executable(lex example6.cpp)
-add_executable(lex example4.cpp)
+add_executable(python lex.cpp)
 
