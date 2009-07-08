@@ -12,14 +12,14 @@
 inline std::string 
 read_from_file(char const* infile)
 {
-    std::ifstream instream(infile);
-    if (!instream.is_open()) {
-        std::cerr << "Couldn't open file: " << infile << std::endl;
-        exit(-1);
-    }
-    instream.unsetf(std::ios::skipws);      // No white space skipping!
-    return std::string(std::istreambuf_iterator<char>(instream.rdbuf()),
-                       std::istreambuf_iterator<char>());
+  std::ifstream instream(infile);
+  if (!instream.is_open()) {
+    std::cerr << "Couldn't open file: " << infile << std::endl;
+    exit(-1);
+  }
+  instream.unsetf(std::ios::skipws);      // No white space skipping!
+  return std::string(std::istreambuf_iterator<char>(instream.rdbuf()),
+		     std::istreambuf_iterator<char>());
 }
 
 
@@ -44,122 +44,126 @@ read_from_file(char const* infile)
 #include <string>
 #include <stack>
 
-using namespace boost::spirit;
-using namespace boost::spirit::qi;
-using namespace boost::spirit::lex;
-
-using boost::phoenix::val;
-using boost::phoenix::ref;
-using boost::phoenix::construct;
-
-
-///////////////////////////////////////////////////////////////////////////////
-//  Token definition
-///////////////////////////////////////////////////////////////////////////////
-
-typedef boost::variant<unsigned, std::string> variant;
-
-struct distance_impl
-{
-  template <typename T0 = void, typename T1 = void>
-  struct result {
-    typedef unsigned type;
-  };
-  
-  template <typename Iter>
-  unsigned 
-  operator()(const Iter& l, const Iter& r) const
-  {
-    return std::distance(l, r);
-  }
-};
-
-boost::phoenix::function<distance_impl> const distance = distance_impl();
-
-static std::map<std::size_t, std::string> names;
-
-template <typename Lexer>
-struct python_tokens : lexer<Lexer>
-{
-  python_tokens()
-  {
-    using boost::phoenix::val;
-    using boost::phoenix::ref;
-    using boost::spirit::lex::_val;
-
-    dentlevel = 0;
-
-    // define the tokens to match
-    identifier = "[a-zA-Z_][a-zA-Z0-9_]*";
-    constant = "[0-9]+";
-    if_ = "if";
-    else_ = "else";
-    while_ = "while";
-    return_ = "return";
-    def = "def";
-
-    comment = "#[^\\n]*";
-
-    tab = "\\t";
-    newline = "\\n";
-    whitespace = "\\x20+";
-
-    this->self("INITIAL") = 
-      if_
-      | def
-      | else_ 
-      | while_ 
-      | return_ 
-      | identifier
-      | constant
-      | '(' | ')' | ':' | '=' | '+' | '>' | '<'
-      | comment
-      | newline
-      | whitespace [ _val = distance(_start, _end) ]
-      | tab
-      ;
-
-    this->self("UNUSED") = indent | dedent;
-
-    names[if_.id()] = "IF";
-    names[identifier.id()] = "IDENTIFIER";
-    names[comment.id()] = "COMMENT";
-    names[newline.id()] = "NEWLINE";
-    names[whitespace.id()] = "WHITESPACE";
-    names[tab.id()] = "TAB";
-    names[def.id()] = "DEF";
-    names[constant.id()] = "CONSTANT";
-    names[indent.id()] = "INDENT";
-    names[dedent.id()] = "DEDENT";
-    names[return_.id()] = "RETURN";
-
-  }
-
-  unsigned dentlevel;
-
-  token_def<> if_, else_, while_, return_, def, newline, comment, indent, dedent, tab;
-
-  token_def<std::string> identifier;
-  token_def<unsigned int> constant, whitespace;
-};
-
 namespace python {
+
+  using namespace boost::spirit;
+  using namespace boost::spirit::qi;
+  using namespace boost::spirit::lex;
+
+  using boost::phoenix::val;
+  using boost::phoenix::ref;
+  using boost::phoenix::construct;
+
+
+  ///////////////////////////////////////////////////////////////////////////////
+  //  Token definition
+  ///////////////////////////////////////////////////////////////////////////////
+
+  typedef boost::variant<unsigned, std::string> variant;
+
+  struct distance_impl
+  {
+    template <typename T0 = void, typename T1 = void>
+    struct result {
+      typedef unsigned type;
+    };
+  
+    template <typename Iter>
+    unsigned 
+    operator()(const Iter& l, const Iter& r) const
+    {
+      return std::distance(l, r);
+    }
+  };
+
+  boost::phoenix::function<distance_impl> const distance = distance_impl();
+
+  static std::map<std::size_t, std::string> names;
+
+  template <typename Lexer>
+  struct lexer : boost::spirit::lex::lexer<Lexer>
+  {
+    lexer()
+    {
+      using boost::phoenix::val;
+      using boost::phoenix::ref;
+      using boost::spirit::lex::_val;
+
+      dentlevel = 0;
+
+      // define the tokens to match
+      identifier = "[a-zA-Z_][a-zA-Z0-9_]*";
+      constant = "[0-9]+";
+      if_ = "if";
+      else_ = "else";
+      while_ = "while";
+      return_ = "return";
+      def = "def";
+
+      comment = "#[^\\n]*";
+
+      tab = "\\t";
+      newline = "\\n";
+      whitespace = "\\x20+";
+
+      this->self("INITIAL") = 
+	if_
+	| def
+	| else_ 
+	| while_ 
+	| return_ 
+	| identifier
+	| constant
+	| '(' | ')' | ':' | '=' | '+' | '>' | '<'
+	| comment
+	| newline
+	| whitespace [ _val = distance(_start, _end) ]
+	| tab
+	;
+
+      this->self("UNUSED") = indent | dedent;
+
+      names[if_.id()] = "IF";
+      names[identifier.id()] = "IDENTIFIER";
+      names[comment.id()] = "COMMENT";
+      names[newline.id()] = "NEWLINE";
+      names[whitespace.id()] = "WHITESPACE";
+      names[tab.id()] = "TAB";
+      names[def.id()] = "DEF";
+      names[constant.id()] = "CONSTANT";
+      names[indent.id()] = "INDENT";
+      names[dedent.id()] = "DEDENT";
+      names[return_.id()] = "RETURN";
+
+    }
+
+    unsigned dentlevel;
+
+    token_def<> if_, else_, while_, return_, def, newline, comment, indent, dedent, tab;
+
+    token_def<std::string> identifier;
+    token_def<unsigned int> constant, whitespace;
+  };
 
   typedef std::string::iterator base_iterator_type;
 
-  typedef lexertl::token< 
-  base_iterator_type, boost::mpl::vector<unsigned int, std::string>
-    > token_type;
+  typedef lexertl::token<base_iterator_type, 
+			 boost::mpl::vector<unsigned int, std::string>
+			 > 
+  token_type;
 
-  //]
   // Here we use the lexertl based lexer engine.
   typedef lexertl::actor_lexer<token_type> lexer_type;
 
   // This is the token definition type (derived from the given lexer type).
-  typedef python_tokens<lexer_type> python_tokens;
+  typedef lexer<lexer_type> lexer_t;
+
+  // now we use the types defined above to create the lexer and grammar
+  // object instances needed to invoke the parsing process
+  python::lexer_t tokens;                         // Our lexer
 
   // this is the iterator type exposed by the lexer 
-  typedef python_tokens::iterator_type iterator_type;
+  typedef lexer_t::iterator_type iterator_type;
   typedef std::vector<iterator_type::value_type>::iterator grammar_iterator_type;
 
   class dentfixing_iterator
@@ -181,7 +185,7 @@ namespace python {
     
     bool equal(dentfixing_iterator const& other) const
     {
-        return this->iter == other.iter;
+      return this->iter == other.iter;
     }
 
     iterator_type::value_type& dereference() const 
@@ -197,56 +201,50 @@ namespace python {
 
 
 
-///////////////////////////////////////////////////////////////////////////////
-//  GRAMMAR DEFINITION
-///////////////////////////////////////////////////////////////////////////////
-template <typename Iterator>
-struct python_grammar 
-  : grammar<Iterator, std::string()>
-{
-  template <typename TokenDef>
-  python_grammar(TokenDef const& tok)
-    : python_grammar::base_type(start)
+  ///////////////////////////////////////////////////////////////////////////////
+  //  GRAMMAR DEFINITION
+  ///////////////////////////////////////////////////////////////////////////////
+  template <typename Iterator>
+  struct python_grammar 
+    : grammar<Iterator, std::string()>
   {
-    plus = tok.identifier >> tok.whitespace >> '+' >> tok.whitespace >> tok.identifier 
-			  >> tok.newline;
-    start = +(plus | tok.newline) ;
+    template <typename TokenDef>
+    python_grammar(TokenDef const& tok)
+      : python_grammar::base_type(start)
+    {
+      plus = tok.identifier >> tok.whitespace >> '+' >> tok.whitespace >> tok.identifier 
+			    >> tok.newline;
+      start = +(plus | tok.newline) ;
 
-    start.name("start");
-    plus.name("plus");
+      start.name("start");
+      plus.name("plus");
 
-    debug(start);
-    debug(plus);
-  }
+      debug(start);
+      debug(plus);
+    }
 
-  typedef boost::variant<unsigned int, std::string> expression_type;
+    typedef boost::variant<unsigned int, std::string> expression_type;
 
-  rule<Iterator, std::string()> start, plus;
+    rule<Iterator, std::string()> start, plus;
 
-};
-
-
-
+  };
 
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 int main()
 {
-  // now we use the types defined above to create the lexer and grammar
-  // object instances needed to invoke the parsing process
-  python::python_tokens tokens;                         // Our lexer
-
   std::string str (read_from_file("python.input"));
 
   // At this point we generate the iterator pair used to expose the
   // tokenized input stream.
   std::string::iterator it = str.begin();
-  python::iterator_type iter = tokens.begin(it, str.end());
-  python::iterator_type end = tokens.end();
+  python::iterator_type iter = python::tokens.begin(it, str.end());
+  python::iterator_type end = python::tokens.end();
         
   python::dentfixing_iterator dfiter(iter), dfend(end);
 
-  python::python_grammar<python::dentfixing_iterator> grammar(tokens);
+  python::python_grammar<python::dentfixing_iterator> grammar(python::tokens);
 
   if (true)
     {
