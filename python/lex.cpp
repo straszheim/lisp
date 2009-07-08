@@ -1,25 +1,3 @@
-//  Copyright (c) 2001-2009 Hartmut Kaiser
-// 
-//  Distributed under the Boost Software License, Version 1.0. (See accompanying 
-//  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-//  This example shows how to create a simple lexer recognizing a couple of 
-//  different tokens aimed at a simple language and how to use this lexer with 
-//  a grammar. It shows how to associate attributes to tokens and how to access 
-//  the token attributes from inside the grammar.
-//
-//  We use explicit token attribute types, making the corresponding token instances
-//  carry convert the matched input into an instance of that type. The token 
-//  attribute is exposed as the parser attribute if this token is used as a 
-//  parser component somewhere in a grammar.
-//
-//  Additionally, this example demonstrates, how to define a token set usable 
-//  as the skip parser during parsing, allowing to define several tokens to be 
-//  ignored.
-//
-//  This example recognizes a very simple programming language having 
-//  assignment statements and if and while control structures. Look at the file
-//  example4.input for an example.
 //
 // #define BOOST_SPIRIT_LEXERTL_DEBUG 1
 
@@ -81,22 +59,22 @@ using boost::phoenix::construct;
 
 typedef boost::variant<unsigned, std::string> variant;
 
-struct strlen_actor
+struct distance_impl
 {
-  template <typename T>
+  template <typename T0 = void, typename T1 = void>
   struct result {
     typedef unsigned type;
   };
   
+  template <typename Iter>
   unsigned 
-  operator()(const variant& v) const
+  operator()(const Iter& l, const Iter& r) const
   {
-    const std::string& s = boost::get<std::string>(v);
-    return s.size();
+    return std::distance(l, r);
   }
 };
 
-boost::phoenix::function<strlen_actor> const strlen_ = strlen_actor();
+boost::phoenix::function<distance_impl> const distance = distance_impl();
 
 static std::map<std::size_t, std::string> names;
 
@@ -105,9 +83,9 @@ struct python_tokens : lexer<Lexer>
 {
   python_tokens()
   {
-    using boost::spirit::_state;
     using boost::phoenix::val;
     using boost::phoenix::ref;
+    using boost::spirit::lex::_val;
 
     dentlevel = 0;
 
@@ -117,32 +95,28 @@ struct python_tokens : lexer<Lexer>
     if_ = "if";
     else_ = "else";
     while_ = "while";
-    newline = "\\n";
-    comment = "#[^\\n]*";
+    return_ = "return";
     def = "def";
-    whitespace = "\\x20*";
-    dent = "\\x20*";
 
-    //   token_def<>("[ \\t\\n]+")[ ref(dentlevel) = distance(_start, _end) ]
-    //      |   "\\/\\*[^*]*\\*+([^/*][^*]*\\*+)*\\/"
-    //      ;
-    // associate the tokens and the token set with the lexer
-    //    this->self = token_def<>('(') | ')' | '{' | '}' | '=' | ';' | constant;
+    comment = "#[^\\n]*";
+
+    tab = "\\t";
+    newline = "\\n";
+    whitespace = "\\x20+";
 
     this->self("INITIAL") = 
       if_
       | def
       | else_ 
       | while_ 
+      | return_ 
       | identifier
       | constant
       | '(' | ')' | ':' | '=' | '+' | '>' | '<'
       | comment
-      | newline[ _state = "DENT" ]
-      | whitespace
-      ;
-
-    this->self("DENT") = dent [ _state = "INITIAL" ] 
+      | newline
+      | whitespace [ _val = distance(_start, _end) ]
+      | tab
       ;
 
     this->self("UNUSED") = indent | dedent;
@@ -152,25 +126,25 @@ struct python_tokens : lexer<Lexer>
     names[comment.id()] = "COMMENT";
     names[newline.id()] = "NEWLINE";
     names[whitespace.id()] = "WHITESPACE";
+    names[tab.id()] = "TAB";
     names[def.id()] = "DEF";
     names[constant.id()] = "CONSTANT";
-    names[dent.id()] = "DENT";
     names[indent.id()] = "INDENT";
     names[dedent.id()] = "DEDENT";
+    names[return_.id()] = "RETURN";
 
   }
 
   unsigned dentlevel;
 
-  token_def<> if_, else_, while_, def, newline, comment, whitespace, indent, dedent;
+  token_def<> if_, else_, while_, return_, def, newline, comment, indent, dedent, tab;
 
-  token_def<std::string> identifier, dent;
-  token_def<unsigned int> constant;
+  token_def<std::string> identifier;
+  token_def<unsigned int> constant, whitespace;
 };
 
-
-
 namespace python {
+
   typedef std::string::iterator base_iterator_type;
 
   typedef lexertl::token< 
@@ -195,14 +169,14 @@ namespace python {
 				     >
   { 
   public:
-    dentfixing_iterator(iterator_type& iter_) : iter(iter_) { }
+    dentfixing_iterator(iterator_type& iter_) 
+      : iter(iter_), n_dedents(0), prev_was_newline(false)
+    { }
 
-    void increment() { 
+    void increment() 
+    { 
+      std::cout << *iter << "\t" << names[*iter] << "\t<<<" << iter->value() << ">>>\n";
       iter++; 
-      if (*iter < 127)
-	std::cout << *iter << "\n";
-      else
-	std::cout << names[*iter] << "\n";
     }
     
     bool equal(dentfixing_iterator const& other) const
@@ -216,6 +190,9 @@ namespace python {
     }
 
     iterator_type iter;
+    std::stack<unsigned> stack;
+    unsigned n_dedents;
+    bool prev_was_newline;
   };
 
 
@@ -231,23 +208,20 @@ struct python_grammar
   python_grammar(TokenDef const& tok)
     : python_grammar::base_type(start)
   {
-    start = tok.identifier >> tok.whitespace >> '+' >> tok.whitespace >> tok.identifier 
-			   >> tok.newline;
+    plus = tok.identifier >> tok.whitespace >> '+' >> tok.whitespace >> tok.identifier 
+			  >> tok.newline;
+    start = +(plus | tok.newline) ;
 
     start.name("start");
+    plus.name("plus");
 
     debug(start);
-    /*
-    debug(skunk);
-    debug(identifier);
-    debug(dent);
-    debug(newline);
-    */
+    debug(plus);
   }
 
   typedef boost::variant<unsigned int, std::string> expression_type;
 
-  rule<Iterator, std::string()> start;
+  rule<Iterator, std::string()> start, plus;
 
 };
 
@@ -270,14 +244,24 @@ int main()
   python::iterator_type iter = tokens.begin(it, str.end());
   python::iterator_type end = tokens.end();
         
-  python::dentfixing_iterator dfiter(iter);
-  python::dentfixing_iterator dfend(end);
+  python::dentfixing_iterator dfiter(iter), dfend(end);
 
   python::python_grammar<python::dentfixing_iterator> grammar(tokens);
+
+  if (true)
+    {
+      for (;dfiter != dfend; dfiter++)
+	dfiter++;
+      exit(0);
+    }
+
 
   std::string result;
   bool r = phrase_parse(dfiter, dfend, grammar, result);
   std::cout << "r = " << r << "\n";
+
+  return 0;
+
 #if 0
   // 
   //  replace 'DENT' tokens with INDENT and DEDENT
@@ -354,6 +338,4 @@ int main()
     }
 #endif
 
-
-  return 0;
 }
