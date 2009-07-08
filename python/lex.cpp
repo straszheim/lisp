@@ -1,4 +1,3 @@
-//
 // #define BOOST_SPIRIT_LEXERTL_DEBUG 1
 
 #include <iostream>
@@ -309,6 +308,4 @@ int main()
   std::cout << "r = " << r << "\n";
 
   return 0;
-
-
 }

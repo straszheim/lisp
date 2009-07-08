@@ -1,6 +1,9 @@
 def f(x):
     return x + 1
 
+
+
+
 def g(x):
     if x < 3:
         return f(x) + 1       
