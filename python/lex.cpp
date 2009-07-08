@@ -89,8 +89,6 @@ namespace python {
       using boost::phoenix::ref;
       using boost::spirit::lex::_val;
 
-      dentlevel = 0;
-
       // define the tokens to match
       identifier = "[a-zA-Z_][a-zA-Z0-9_]*";
       constant = "[0-9]+";
@@ -137,8 +135,6 @@ namespace python {
 
     }
 
-    unsigned dentlevel;
-
     token_def<> if_, else_, while_, return_, def, newline, comment, indent, dedent, tab;
 
     token_def<std::string> identifier;
@@ -152,17 +148,12 @@ namespace python {
 			 > 
   token_type;
 
-  // Here we use the lexertl based lexer engine.
   typedef lexertl::actor_lexer<token_type> lexer_type;
 
-  // This is the token definition type (derived from the given lexer type).
   typedef lexer<lexer_type> lexer_t;
 
-  // now we use the types defined above to create the lexer and grammar
-  // object instances needed to invoke the parsing process
-  python::lexer_t tokens;                         // Our lexer
+  python::lexer_t lexer_;            
 
-  // this is the iterator type exposed by the lexer 
   typedef lexer_t::iterator_type iterator_type;
   typedef std::vector<iterator_type::value_type>::iterator grammar_iterator_type;
 
@@ -174,13 +165,54 @@ namespace python {
   { 
   public:
     dentfixing_iterator(iterator_type& iter_) 
-      : iter(iter_), n_dedents(0), prev_was_newline(false)
-    { }
+      : iter(iter_), n_dedents(0), prev_was_newline(false), prev_was_indent(false)
+    { 
+      stack.push(0);
+      indent_token.id(lexer_.indent.id());
+      dedent_token.id(lexer_.dedent.id());
+    }
 
     void increment() 
     { 
-      std::cout << *iter << "\t" << names[*iter] << "\t<<<" << iter->value() << ">>>\n";
+      prev_was_indent = false;
+      if (n_dedents > 0)
+	--n_dedents;
+
       iter++; 
+
+      if (*iter == lexer_.newline.id())
+	{
+	  prev_was_newline = true;
+	  return;
+	}
+
+      if (prev_was_newline)
+	{
+	  unsigned dentlevel = *iter == lexer_.whitespace.id() ?
+	    boost::get<unsigned>(iter->value()) : 0;
+
+	  std::cout << "dent level is " << dentlevel << "\n";
+	    
+	  prev_was_newline = false;
+
+	  if (dentlevel > stack.top())
+	    {
+	      stack.push(dentlevel);
+	      prev_was_indent = true;
+	      return;
+	    }
+
+	  if (dentlevel < stack.top())
+	    {
+	      while (dentlevel < stack.top())
+		{
+		  stack.pop();
+		  n_dedents++;
+		}
+	      if (dentlevel != stack.top())
+		throw "BAD OUTDENT";
+	    }
+	}
     }
     
     bool equal(dentfixing_iterator const& other) const
@@ -190,13 +222,24 @@ namespace python {
 
     iterator_type::value_type& dereference() const 
     { 
-      return *iter; 
+      if (prev_was_indent)
+	{
+	  return indent_token;
+	}
+      if (n_dedents > 0)
+	{
+	  return dedent_token;
+	}
+      return *iter;
     }
 
     iterator_type iter;
     std::stack<unsigned> stack;
-    unsigned n_dedents;
+    mutable unsigned n_dedents;
     bool prev_was_newline;
+    bool prev_was_indent;
+    mutable token_type indent_token;
+    mutable token_type dedent_token;
   };
 
 
@@ -239,17 +282,20 @@ int main()
   // At this point we generate the iterator pair used to expose the
   // tokenized input stream.
   std::string::iterator it = str.begin();
-  python::iterator_type iter = python::tokens.begin(it, str.end());
-  python::iterator_type end = python::tokens.end();
+  python::iterator_type iter = python::lexer_.begin(it, str.end());
+  python::iterator_type end = python::lexer_.end();
         
   python::dentfixing_iterator dfiter(iter), dfend(end);
 
-  python::python_grammar<python::dentfixing_iterator> grammar(python::tokens);
+  python::python_grammar<python::dentfixing_iterator> grammar(python::lexer_);
 
   if (true)
     {
-      for (;dfiter != dfend; dfiter++)
-	dfiter++;
+      while(dfiter != dfend)
+	{
+	  std::cout << boost::format("%-5u %10s [ %s ]\n") % *dfiter % python::names[*dfiter] % dfiter->value();
+	  ++dfiter;
+	}
       exit(0);
     }
 
