@@ -43,6 +43,7 @@ read_from_file(char const* infile)
 #include <fstream>
 #include <string>
 #include <stack>
+#include <queue>
 
 namespace python {
 
@@ -174,9 +175,11 @@ namespace python {
 
     void increment() 
     { 
-      prev_was_indent = false;
-      if (n_dedents > 0)
-	--n_dedents;
+      if (queue.size())
+	{
+	  queue.pop();
+	  return;
+	}
 
       iter++; 
 
@@ -190,16 +193,13 @@ namespace python {
 	{
 	  unsigned dentlevel = *iter == lexer_.whitespace.id() ?
 	    boost::get<unsigned>(iter->value()) : 0;
-
-	  std::cout << "dent level is " << dentlevel << "\n";
-	    
+	  
 	  prev_was_newline = false;
 
 	  if (dentlevel > stack.top())
 	    {
 	      stack.push(dentlevel);
-	      prev_was_indent = true;
-	      return;
+	      queue.push(indent_token);
 	    }
 
 	  if (dentlevel < stack.top())
@@ -207,12 +207,16 @@ namespace python {
 	      while (dentlevel < stack.top())
 		{
 		  stack.pop();
-		  n_dedents++;
+		  queue.push(dedent_token);
 		}
 	      if (dentlevel != stack.top())
-		throw "BAD OUTDENT";
+		throw "BAD DEDENT";
 	    }
 	}
+
+      if (*iter == lexer_.whitespace.id()
+	  || *iter == lexer_.comment.id())
+	iter++;
     }
     
     bool equal(dentfixing_iterator const& other) const
@@ -222,19 +226,16 @@ namespace python {
 
     iterator_type::value_type& dereference() const 
     { 
-      if (prev_was_indent)
-	{
-	  return indent_token;
-	}
-      if (n_dedents > 0)
-	{
-	  return dedent_token;
-	}
-      return *iter;
+      if (queue.size())
+	return queue.front();
+      else
+	return *iter;
     }
 
     iterator_type iter;
     std::stack<unsigned> stack;
+    mutable std::queue<token_type> queue;
+
     mutable unsigned n_dedents;
     bool prev_was_newline;
     bool prev_was_indent;
@@ -279,6 +280,9 @@ int main()
 {
   std::string str (read_from_file("python.input"));
 
+  // add a comment at the end so the lexer generates any needed dedents
+  str += "\n#flush\n";
+
   // At this point we generate the iterator pair used to expose the
   // tokenized input stream.
   std::string::iterator it = str.begin();
@@ -306,80 +310,5 @@ int main()
 
   return 0;
 
-#if 0
-  // 
-  //  replace 'DENT' tokens with INDENT and DEDENT
-  //
-  std::vector<python::iterator_type::value_type> dented_tokens;
-  std::stack<unsigned> stack;
-  stack.push(0);
-
-  while(iter != end)
-    {
-      std::cout << "\t[" << *iter << " " << iter->value() << "\t";
-
-      if (*iter == tokens.dent.id())
-	{
-	  //	  unsigned u = boost::get<unsigned>(iter->value());
-	  //	  std::string s(iter->value().begin(), iter->value().end());
-	  boost::iterator_range<std::string::iterator> pr 
-	    = boost::get<boost::iterator_range<std::string::iterator> >(iter->value());
-
-	  std::size_t dist = std::distance(pr.begin(), pr.end());
-
-	  std::cout << "DENT[" << iter->value() << " " << dist << "]\n";
-	  if (dist > stack.top())
-	    {
-	      stack.push(dist);
-	      python::iterator_type::value_type newtoken = *iter;
-	      newtoken.id(tokens.indent.id());
-	      dented_tokens.push_back(newtoken);
-	    }
-	  else if (dist < stack.top())
-	    {
-	      while (dist < stack.top())
-		{
-		  stack.pop();
-		  python::iterator_type::value_type newtoken = *iter;
-		  newtoken.id(tokens.dedent.id());
-		  dented_tokens.push_back(newtoken);
-		}
-	      if (dist != stack.top())
-		throw "BAD DENT\n";
-	    }
-	}
-      else if(*iter == tokens.whitespace.id())
-	; // drop the token
-      else
-	dented_tokens.push_back(*iter);
-
-      if (*iter < 127)
-	{
-	  char c = *iter;
-	  std::cout << c;
-	}
-      else
-	{
-	  std::cout << tokens.names[*iter];
-	}
-      std::cout << "\t" << tokens.dentlevel << "]\n";
-      
-      iter++;
-    }
-
-  // if the indentations match this stack size will be 1 (just the zero we started with)
-  assert(stack.size() == 1);
-
-  // print the postprocessed tokens
-  std::cout << "\n\nAFTER PROCESSING:\n";
-  
-  for (std::vector<python::iterator_type::value_type>::iterator iter = dented_tokens.begin();
-       iter != dented_tokens.end();
-       iter++)
-    {
-      std::cout << "[" << *iter << "\t" << tokens.names[*iter] << "\t"
-		<< iter->value() << "]\n";
-    }
-#endif
 
 }
