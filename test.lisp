@@ -1,7 +1,19 @@
 #!/home/troy/Projects/boospiele/calc/build/lisp
 
 ;;
-;; silly test suite
+;; A test suite.  run /path/to/bin/lisp /path/to/this/file
+;; you should see:
+;;
+;; % ./bin/lisp ../src/test.lisp 
+;; "pass... "
+;; (equal 1 1)
+;; "pass... "
+;; (equal t t)
+;; etc etc
+;; "passes:"
+;; 49
+;; "failures:"
+;; 0
 ;;
 
 ;(setf x 'y)
