@@ -8,7 +8,11 @@ cmake_minimum_required(VERSION 2.6)
 include(CheckIncludeFiles)
 check_include_files("readline/readline.h;readline/history.h" USE_READLINE)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
 set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build debug by default" FORCE)
+set(CMAKE_CXX_FLAGS "-Wall")
 
 if(USE_READLINE)
   message(STATUS "readline/readline.h found, enabling readline")
@@ -81,6 +85,7 @@ foreach(subdir
     lisp
     word_count_static
     python
+    gc
     )
   add_subdirectory(${subdir})
 endforeach()
