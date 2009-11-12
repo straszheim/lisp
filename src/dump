@@ -1,0 +1,196 @@
+CMakeLists.txt:20:set(BOOST_ROOT "BOOST_ROOT[01;31m-[mNOTFOUND"
+backquote.cpp:58:    variant car_result = visit(p[01;31m-[m>car);
+backquote.cpp:59:    variant cdr_result = visit(p[01;31m-[m>cdr);
+backquote.cpp:61:    if (boost::get<special<comma_at_> >(&(p[01;31m-[m>car)))
+backquote.cpp:63:	last(car_result)[01;31m-[m>cdr = cdr_result;
+codeis0.dot:7: shape = record ];"0x18878d0":car [01;31m-[m> "0x18878f0"
+codeis0.dot:8:"0x18878d0":cdr [01;31m-[m> "0"
+codeis0.dot:10: shape = record ];"0x18878a0":car [01;31m-[m> "0x18878c0"
+codeis0.dot:11:"0x18878a0":cdr [01;31m-[m> "0x18878d0"
+codeis0.dot:13: shape = record ];"0x1887950":car [01;31m-[m> "0x1887890"
+codeis0.dot:14:"0x1887950":cdr [01;31m-[m> "0x18878a0"
+codeis0.dot:16: shape = record ];"0x1887930":car [01;31m-[m> "0x1887950"
+codeis0.dot:17:"0x1887930":cdr [01;31m-[m> "0"
+codeis0.dot:19: shape = record ];"0x1887810":car [01;31m-[m> "0x1887920"
+codeis0.dot:20:"0x1887810":cdr [01;31m-[m> "0x1887930"
+codeis0.dot:22: shape = record ];"0x1887b20":car [01;31m-[m> "0x1887800"
+codeis0.dot:23:"0x1887b20":cdr [01;31m-[m> "0x1887810"
+codeis0.dot:28: shape = record ];"0x1887a70":car [01;31m-[m> "0x1887a90"
+codeis0.dot:29:"0x1887a70":cdr [01;31m-[m> "0"
+codeis0.dot:31: shape = record ];"0x18879c0":car [01;31m-[m> "0x1887a60"
+codeis0.dot:32:"0x18879c0":cdr [01;31m-[m> "0x1887a70"
+codeis0.dot:34: shape = record ];"0x1887b50":car [01;31m-[m> "0x18879b0"
+codeis0.dot:35:"0x1887b50":cdr [01;31m-[m> "0x18879c0"
+codeis0.dot:37: shape = record ];"0x1887b30":car [01;31m-[m> "0x1887b50"
+codeis0.dot:38:"0x1887b30":cdr [01;31m-[m> "0"
+codeis0.dot:40: shape = record ];"0x7fff13f5f9f8":car [01;31m-[m> "0x1887b20"
+codeis0.dot:41:"0x7fff13f5f9f8":cdr [01;31m-[m> "0x1887b30"
+context.cpp:24:    newscope[01;31m-[m>next_ = this_ptr;
+context.cpp:26:    //    newscope[01;31m-[m>dump(std::cout);
+context.cpp:48:    ctx[01;31m-[m>dump(std::cerr);
+context.cpp:51:	std::map<std::string, variant>::iterator iter = ctx[01;31m-[m>m_.find(s);
+context.cpp:52:	if (iter != ctx[01;31m-[m>m_.end())
+context.cpp:53:	  return convert<T>(iter[01;31m-[m>second);
+context.cpp:54:	ctx = ctx[01;31m-[m>next_;
+context.cpp:74:	for (std::map<std::string, variant>::const_iterator iter = ctx[01;31m-[m>m_.begin();
+context.cpp:75:	     iter != ctx[01;31m-[m>m_.end();
+context.cpp:78:	    os << "\t" << iter[01;31m-[m>first << " ";
+context.cpp:79:	    print(os, iter[01;31m-[m>second);
+context.cpp:83:	ctx = ctx[01;31m-[m>next_;
+debug.cpp:40:    boost::apply_visitor(*this, p[01;31m-[m>car);
+debug.cpp:43:    boost::apply_visitor(*this, p[01;31m-[m>cdr);
+dot.cpp:55:    void *carp = boost::apply_visitor(*this, p[01;31m-[m>car);
+dot.cpp:56:    void *cdrp = boost::apply_visitor(*this, p[01;31m-[m>cdr);
+dot.cpp:59:    *os << "\"" << &p << "\":car [01;31m-[m> \"" << carp << "\"\n";
+dot.cpp:60:    *os << "\"" << &p << "\":cdr [01;31m-[m> \"" << cdrp << "\"\n";
+eval.cpp:45:    return ctx[01;31m-[m>get<variant>(s);
+eval.cpp:61:    //    ctx[01;31m-[m>dump(std::cout);
+eval.cpp:62:    variant v = visit(p[01;31m-[m>car);
+eval.cpp:66:    return f(ctx, p[01;31m-[m>cdr);
+grammar.cpp:63:      tmp[01;31m-[m>car = v[0];
+grammar.cpp:67:	  tmp[01;31m-[m>cdr = tail;
+grammar.cpp:69:	  tmp[01;31m-[m>car = v[i];
+grammar.cpp:118:      << std::string(err_pos, last)   // iterators to error[01;31m-[mpos, end
+grammar.cpp:136:      | ";" >> *(char_ [01;31m-[m eol) >> eol     // C[01;31m-[mstyle comments
+grammar.cpp:168:	     +(alnum | char_("+") | char_("[01;31m-[m") | char_("*") | char_("/"))
+grammar.cpp:174:    escaped_char %= ('\\' >> char_) | (char_ [01;31m-[m '"')
+lex.cpp:29:        this[01;31m-[m>self.add
+lex.cpp:31:	  ("[a[01;31m-[mzA[01;31m-[mZ0[01;31m-[m9\\*]+", IDENTIFIER)
+main.cpp:44:  global[01;31m-[m>put("+", lisp::function(lisp::ops::op<std::plus<double> >(0)));
+main.cpp:45:  global[01;31m-[m>put("*", lisp::function(lisp::ops::op<std::multiplies<double> >(1)));
+main.cpp:46:  global[01;31m-[m>put("[01;31m-[m", lisp::function(lisp::ops::minus()));
+main.cpp:47:  global[01;31m-[m>put("/", lisp::function(lisp::ops::divides()));
+main.cpp:48:  global[01;31m-[m>put("cons", lisp::function(lisp::ops::cons()));
+main.cpp:49:  global[01;31m-[m>put("list", lisp::function(lisp::ops::list()));
+main.cpp:50:  global[01;31m-[m>put("defvar", lisp::function(lisp::ops::defvar()));
+main.cpp:51:  global[01;31m-[m>put("print", lisp::function(lisp::ops::print()));
+main.cpp:52:  global[01;31m-[m>put("eval", lisp::function(lisp::ops::evaluate()));
+main.cpp:53:  global[01;31m-[m>put("defun", lisp::function(lisp::ops::defun()));
+main.cpp:54:  global[01;31m-[m>put("progn", lisp::function(lisp::ops::progn()));
+main.cpp:55:  global[01;31m-[m>put("equal", lisp::function(lisp::ops::equal()));
+main.cpp:56:  global[01;31m-[m>put("if", lisp::function(lisp::ops::if_clause()));
+main.cpp:57:  global[01;31m-[m>put("setf", lisp::function(lisp::ops::setf()));
+main.cpp:58:  global[01;31m-[m>put("defmacro", lisp::function(lisp::ops::defmacro()));
+main.cpp:59:  global[01;31m-[m>put("lambda", lisp::function(lisp::ops::lambda()));
+main.cpp:60:  global[01;31m-[m>put("let", lisp::function(lisp::ops::let()));
+main.cpp:62:  global[01;31m-[m>put("t", t);
+main.cpp:63:  global[01;31m-[m>put("nil",  nil);
+main.cpp:105:  std::cout << "[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m[01;31m-[m\n";
+main.cpp:109:  context_ptr scope = global[01;31m-[m>scope();
+main.cpp:170:		std::cout << "*** [01;31m-[m EVAL exception caught: " << e.what() << "\n";
+main.cpp:196:  context_ptr scope = global[01;31m-[m>scope();
+main.cpp:238:	    std::cout << "*** [01;31m-[m EVAL exception caught: " << e.what() << "\n";
+main.cpp:261:  if(args.size() > 0 && args.front() == "[01;31m-[md")
+ops.cpp:84:	return [01;31m-[md;
+ops.cpp:86:	d [01;31m-[m= get<double>(args[i]);
+ops.cpp:101:      nc[01;31m-[m>car = v >> car;
+ops.cpp:102:      nc[01;31m-[m>cdr = v >> cdr >> car;
+ops.cpp:127:	  tail[01;31m-[m>car = eval(c, v >> car);
+ops.cpp:132:	      tail[01;31m-[m>cdr = tmp;
+ops.cpp:170:        return boost::apply_visitor(*this, lhs[01;31m-[m>car, rhs[01;31m-[m>car)
+ops.cpp:171:	  && boost::apply_visitor(*this, lhs[01;31m-[m>cdr, rhs[01;31m-[m>cdr);
+ops.cpp:205:      global[01;31m-[m>put(s, result);
+ops.cpp:218:	variant& destination = ctx[01;31m-[m>get<variant>(s);
+ops.cpp:221:	ctx[01;31m-[m>put(s, result);
+ops.cpp:223:      //ctx[01;31m-[m>dump(std::cout);
+ops.cpp:249:      //ctx[01;31m-[m>dump(std::cout);
+ops.cpp:261:      context_ptr scope = ctx[01;31m-[m>scope();
+ops.cpp:266:	  scope[01;31m-[m>put(get<symbol>(pair >> car), eval(ctx, pair >> cdr >> car));
+ops.cpp:288:	context_ptr scope = ctx[01;31m-[m>scope();
+ops.cpp:291:	    variant evalled = eval(c, l[01;31m-[m>car);
+ops.cpp:292:	    scope[01;31m-[m>put(args[u], evalled);
+ops.cpp:293:	    l = get<cons_ptr>(l[01;31m-[m>cdr);
+ops.cpp:297:	progn[01;31m-[m>car = symbol("progn");
+ops.cpp:298:	progn[01;31m-[m>cdr = code;
+ops.cpp:320:      c[01;31m-[m>put(s, function(dispatcher));
+ops.cpp:363:	context_ptr scope = c[01;31m-[m>scope();
+ops.cpp:366:	    scope[01;31m-[m>put(args[u], l[01;31m-[m>car);
+ops.cpp:367:	    l = get<cons_ptr>(l[01;31m-[m>cdr);
+ops.cpp:371:	progn[01;31m-[m>car = symbol("progn");
+ops.cpp:372:	progn[01;31m-[m>cdr = code;
+ops.cpp:388:	context_ptr scope = c[01;31m-[m>scope();
+ops.cpp:391:	    scope[01;31m-[m>put(args[u], l[01;31m-[m>car);
+ops.cpp:392:	    l = get<cons_ptr>(l[01;31m-[m>cdr);
+ops.cpp:396:	progn[01;31m-[m>car = symbol("progn");
+ops.cpp:397:	progn[01;31m-[m>cdr = code;
+ops.cpp:421:      c[01;31m-[m>put(s, function(dispatcher));
+parsed1.dot:7: shape = record ];"0x19ee730":car [01;31m-[m> "0x19ee6c0"
+parsed1.dot:8:"0x19ee730":cdr [01;31m-[m> "0"
+parsed1.dot:10: shape = record ];"0x19ee260":car [01;31m-[m> "0x19ee720"
+parsed1.dot:11:"0x19ee260":cdr [01;31m-[m> "0x19ee730"
+parsed1.dot:13: shape = record ];"0x19eefb0":car [01;31m-[m> "0x19ee260"
+parsed1.dot:14:"0x19eefb0":cdr [01;31m-[m> "0"
+parsed1.dot:18: shape = record ];"0x19eef20":car [01;31m-[m> "0x19eebc0"
+parsed1.dot:19:"0x19eef20":cdr [01;31m-[m> "0"
+parsed1.dot:26: shape = record ];"0x19eed50":car [01;31m-[m> "0x19eed70"
+parsed1.dot:27:"0x19eed50":cdr [01;31m-[m> "0"
+parsed1.dot:29: shape = record ];"0x19eed20":car [01;31m-[m> "0x19eed40"
+parsed1.dot:30:"0x19eed20":cdr [01;31m-[m> "0x19eed50"
+parsed1.dot:32: shape = record ];"0x19eedd0":car [01;31m-[m> "0x19eed10"
+parsed1.dot:33:"0x19eedd0":cdr [01;31m-[m> "0x19eed20"
+parsed1.dot:35: shape = record ];"0x19eedb0":car [01;31m-[m> "0x19eedd0"
+parsed1.dot:36:"0x19eedb0":cdr [01;31m-[m> "0"
+parsed1.dot:38: shape = record ];"0x19eec90":car [01;31m-[m> "0x19eeda0"
+parsed1.dot:39:"0x19eec90":cdr [01;31m-[m> "0x19eedb0"
+parsed1.dot:41: shape = record ];"0x19eef50":car [01;31m-[m> "0x19eec80"
+parsed1.dot:42:"0x19eef50":cdr [01;31m-[m> "0x19eec90"
+parsed1.dot:47: shape = record ];"0x19eeea0":car [01;31m-[m> "0x19eeec0"
+parsed1.dot:48:"0x19eeea0":cdr [01;31m-[m> "0"
+parsed1.dot:50: shape = record ];"0x19eee40":car [01;31m-[m> "0x19eee90"
+parsed1.dot:51:"0x19eee40":cdr [01;31m-[m> "0x19eeea0"
+parsed1.dot:53: shape = record ];"0x19eef80":car [01;31m-[m> "0x19eee30"
+parsed1.dot:54:"0x19eef80":cdr [01;31m-[m> "0x19eee40"
+parsed1.dot:56: shape = record ];"0x19eef60":car [01;31m-[m> "0x19eef80"
+parsed1.dot:57:"0x19eef60":cdr [01;31m-[m> "0"
+parsed1.dot:59: shape = record ];"0x19eef30":car [01;31m-[m> "0x19eef50"
+parsed1.dot:60:"0x19eef30":cdr [01;31m-[m> "0x19eef60"
+parsed1.dot:62: shape = record ];"0x19eef00":car [01;31m-[m> "0x19eef20"
+parsed1.dot:63:"0x19eef00":cdr [01;31m-[m> "0x19eef30"
+parsed1.dot:65: shape = record ];"0x19eefe0":car [01;31m-[m> "0x19eeef0"
+parsed1.dot:66:"0x19eefe0":cdr [01;31m-[m> "0x19eef00"
+parsed1.dot:68: shape = record ];"0x19eefc0":car [01;31m-[m> "0x19eefe0"
+parsed1.dot:69:"0x19eefc0":cdr [01;31m-[m> "0"
+parsed1.dot:71: shape = record ];"0x19ee760":car [01;31m-[m> "0x19eefb0"
+parsed1.dot:72:"0x19ee760":cdr [01;31m-[m> "0x19eefc0"
+parsed1.dot:74: shape = record ];"0x19ef040":car [01;31m-[m> "0x19ee750"
+parsed1.dot:75:"0x19ef040":cdr [01;31m-[m> "0x19ee760"
+parsed1.dot:77: shape = record ];"0x19ef020":car [01;31m-[m> "0x19ef040"
+parsed1.dot:78:"0x19ef020":cdr [01;31m-[m> "0"
+parsed1.dot:80: shape = record ];"0x19ee6a0":car [01;31m-[m> "0x19ef010"
+parsed1.dot:81:"0x19ee6a0":cdr [01;31m-[m> "0x19ef020"
+parsed1.dot:83: shape = record ];"0x7fffac85d7b8":car [01;31m-[m> "0x19ee690"
+parsed1.dot:84:"0x7fffac85d7b8":cdr [01;31m-[m> "0x19ee6a0"
+parsed2.dot:4: shape = record ];"0x1cb1020":car [01;31m-[m> "0x1cb1040"
+parsed2.dot:5:"0x1cb1020":cdr [01;31m-[m> "0"
+parsed2.dot:7: shape = record ];"0x7fffea5b0568":car [01;31m-[m> "0x1cb1010"
+parsed2.dot:8:"0x7fffea5b0568":cdr [01;31m-[m> "0x1cb1020"
+parsed3.dot:4: shape = record ];"0xb2a050":car [01;31m-[m> "0xb29660"
+parsed3.dot:5:"0xb2a050":cdr [01;31m-[m> "0"
+parsed3.dot:7: shape = record ];"0x7fff71b2fae8":car [01;31m-[m> "0xb2a040"
+parsed3.dot:8:"0x7fff71b2fae8":cdr [01;31m-[m> "0xb2a050"
+parsed4.dot:4: shape = record ];"0xb29670":car [01;31m-[m> "0xb29690"
+parsed4.dot:5:"0xb29670":cdr [01;31m-[m> "0"
+parsed4.dot:7: shape = record ];"0x7fff71b2fae8":car [01;31m-[m> "0xb29660"
+parsed4.dot:8:"0x7fff71b2fae8":cdr [01;31m-[m> "0xb29670"
+print.cpp:53:    visit(p[01;31m-[m>car);
+print.cpp:56:    while(! is_nil(k[01;31m-[m>cdr))
+print.cpp:59:	if (is_ptr(k[01;31m-[m>cdr))
+print.cpp:61:	    k = boost::get<cons_ptr>(k[01;31m-[m>cdr);
+print.cpp:62:	    visit(k[01;31m-[m>car);
+print.cpp:67:	    visit(k[01;31m-[m>cdr);
+scripty.lisp:1:#!/home/troy/Projects/boospiele/calc/build/lisp [01;31m-[md
+test.lisp:52:(test '(equal ([01;31m-[m 1 1) 0))
+test.lisp:53:(test '(equal ([01;31m-[m 2 1) 1))
+test.lisp:54:(test '(equal ([01;31m-[m 100 1) 99))
+test.lisp:65:(test '(equal ([01;31m-[m 1) [01;31m-[m1))
+test.lisp:66:(test '(equal ([01;31m-[m 1 1 1) [01;31m-[m1))
+test.lisp:67:(test '(equal ([01;31m-[m 2 1) 1))
+test.lisp:75:    (* x (factorial ([01;31m-[m x 1)))))
+test.lisp:85:; quotes, commas, comma[01;31m-[mat, backquotes syntax
+types.hpp:125:    c[01;31m-[m>count++;
+types.hpp:131:    c[01;31m-[m>count[01;31m-[m[01;31m-[m;
+types.hpp:132:    if (c[01;31m-[m>count == 0)
+types.hpp:153:    while (!is_nil(tmp[01;31m-[m>cdr))
+types.hpp:155:	tmp = boost::get<cons_ptr>(tmp[01;31m-[m>cdr);
+types.hpp:175:    return boost::get<cons_ptr>(v)[01;31m-[m>car;
+types.hpp:180:    return boost::get<cons_ptr>(v)[01;31m-[m>cdr;
