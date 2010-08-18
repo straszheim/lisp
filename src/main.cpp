@@ -132,7 +132,14 @@ int repl(bool debug, std::istream& is)
       lisp::variant result;
       while (iter != end)
 	{
-	  bool r = phrase_parse(iter, end, lispi, skipper, result);
+	  bool r;
+
+	  try { 
+	    r = phrase_parse(iter, end, lispi, skipper, result);
+	  } catch (const std::exception& e) {
+	    r = false;
+	    std::cout << "error: " << e.what() << "\n";
+	  }
 
 	  if (!r)
 	    {
