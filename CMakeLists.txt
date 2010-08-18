@@ -18,11 +18,13 @@ if(USE_READLINE)
   message(STATUS "readline/readline.h found, enabling readline")
 endif()
 
+
 #
-# find_package(Boost 1.41.0 COMPONENTS program_options NO_MODULE)
+#  This thing builds with basically any boost > 1.40 or so, modulo
+#  boost.spirit >= 1.41.0.  Boost.Spirit is header-only so the 1.44
+#  headers are included here
 #
-include("/home/troy/Projects/boost/cmake/build/lib/Exports.cmake")
-include_directories("/home/troy/Projects/boost/cmake/src")
+find_package(Boost 1.40.0 COMPONENTS program_options)
 
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.hpp.in 

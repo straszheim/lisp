@@ -5,6 +5,7 @@
 ## See http://www.boost.org/LICENSE_1.0.txt
 ##
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(lisp 
   main.cpp ops.cpp context.cpp eval.cpp types.cpp
@@ -16,5 +17,5 @@ if(USE_READLINE)
   target_link_libraries(lisp readline)
 endif()
 
-target_link_libraries(lisp boost_program_options-mt-shared)
+target_link_libraries(lisp ${Boost_LIBRARIES})
 
